@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ลงคิว Million Hair</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #14294A; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C;
+    --bg: #F4F6F3; --card: #FCFDFB; --line: #DDE3DF; --text: #14294A; --muted: #4A5568;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sarabun', Tahoma, sans-serif; font-size: 17px; }
+  header { background: var(--navy); color: #F4F6F3; padding: 28px 20px 24px; }
+  header p { margin: 0; color: #F4A259; font-family: 'Prompt', sans-serif; font-size: 13px; letter-spacing: 2px; }
+  header h1 { margin: 6px 0 0; font-family: 'Prompt', sans-serif; font-size: 26px; font-weight: 600; }
+  header small { color: #BFD0E0; }
+  main { padding: 20px 16px 40px; max-width: 480px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  label.field { display: block; font-weight: 600; margin-bottom: 8px; }
+  input[type=text] { width: 100%; padding: 12px 14px; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .services { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .services label { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; background: #fff; }
+  .services input { display: none; }
+  .services label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
+  .services b { display: block; }
+  .services span { color: var(--muted); font-size: 14px; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted); }
+  .consent input { margin-top: 4px; width: 18px; height: 18px; }
+  button { width: 100%; padding: 14px; font: 600 18px 'Prompt', sans-serif; border: 0; border-radius: 12px; background: var(--teal); color: #F4F6F3; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); margin-top: 10px; }
+  button:disabled { opacity: .5; }
+  .ticket { text-align: center; }
+  .ticket .label { color: var(--muted); margin: 0; }
+  .ticket .no { font-family: 'Prompt', sans-serif; font-size: 72px; font-weight: 600; color: var(--navy); margin: 4px 0 12px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .stats div { background: var(--teal-soft); border-radius: 12px; padding: 12px; }
+  .stats b { display: block; font-family: 'Prompt', sans-serif; font-size: 26px; color: var(--teal); }
+  .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--navy); color: #F4F6F3; font-size: 14px; }
+  .pill.near { background: var(--orange); }
+  .note { color: var(--muted); font-size: 15px; }
+  .error { color: var(--orange); font-weight: 600; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header>
+  <p>MILLION HAIR</p>
+  <h1>ลงคิวออนไลน์</h1>
+  <small>หนึ่งในล้าน ไม่ต้องรอ</small>
+</header>
+<main>
+  <div id="loading" class="card note">กำลังโหลด…</div>
+
+  <form id="form" class="card" hidden>
+    <label class="field" for="name">ชื่อที่ให้ร้านเรียก</label>
+    <input id="name" type="text" maxlength="50" required>
+    <p class="field" style="font-weight:600;margin:20px 0 8px">เลือกบริการ</p>
+    <div class="services" id="services"></div>
+    <p></p>
+    <label class="consent">
+      <input id="consent" type="checkbox">
+      <span>ยินยอมให้ร้านเก็บชื่อและ LINE User ID เพื่อใช้จัดคิวและแจ้งเตือนเท่านั้น</span>
+    </label>
+    <p id="formError" class="error" hidden></p>
+    <button id="submit" type="submit">ยืนยันลงคิว</button>
+  </form>
+
+  <section id="ticket" class="card ticket" hidden>
+    <p class="label">คิวของคุณ</p>
+    <p class="no" id="tNo">–</p>
+    <p><span class="pill" id="tStatus">รอคิว</span></p>
+    <div class="stats">
+      <div><b id="tAhead">–</b>คิวก่อนหน้า</div>
+      <div><b id="tWait">–</b>นาทีโดยประมาณ</div>
+    </div>
+    <p class="note" id="tNote">ไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความไปทาง LINE</p>
+    <button class="secondary" id="refresh" type="button">อัปเดตสถานะ</button>
+  </section>
+
+  <p id="fatal" class="card error" hidden></p>
+</main>
+
+<script src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script>
+<script>
+  const LIFF_ID = '2012052973-UNW6H5DF';
+  const GAS_URL = 'PASTE_APPS_SCRIPT_WEB_APP_URL_HERE';
+  const SERVICES = [
+    ['ตัดผม', '~30 นาที'],
+    ['สระ-ไดร์', '~30 นาที'],
+    ['ตัด + สระ-ไดร์', '~45 นาที'],
+    ['ทำสี', '~90 นาที'],
+  ];
+
+  const $ = id => document.getElementById(id);
+  const show = (id, on = true) => { $(id).hidden = !on; };
+
+  async function api(payload) {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ไม่ทำให้เกิด CORS preflight
+      body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
+    return data;
+  }
+
+  function renderTicket(s) {
+    show('loading', false); show('form', false); show('ticket');
+    $('tNo').textContent = s.queueNo;
+    $('tStatus').textContent = s.status;
+    $('tStatus').className = 'pill' + (s.status === 'ใกล้ถึงคิว' ? ' near' : '');
+    $('tAhead').textContent = s.ahead;
+    $('tWait').textContent = s.waitMin;
+    $('tNote').textContent = s.status === 'ใกล้ถึงคิว'
+      ? 'ใกล้ถึงคิวแล้ว กรุณากลับมาที่ร้านภายใน 10 นาที'
+      : s.status === 'รับบริการ' ? 'กำลังให้บริการ ขอบคุณที่ใช้บริการค่ะ'
+      : 'ไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความไปทาง LINE';
+  }
+
+  async function refresh() {
+    const s = await api({ action: 'status' });
+    if (s.inQueue) renderTicket(s);
+    else { show('ticket', false); show('form'); }
+  }
+
+  function renderForm(profile) {
+    $('name').value = profile.displayName || '';
+    $('services').innerHTML = SERVICES.map(([name, time], i) =>
+      `<label><input type="radio" name="service" value="${name}" ${i === 0 ? 'checked' : ''}><b>${name}</b><span>${time}</span></label>`
+    ).join('');
+    $('form').addEventListener('submit', async ev => {
+      ev.preventDefault();
+      show('formError', false);
+      if (!$('consent').checked) { $('formError').textContent = 'กรุณากดยินยอมก่อนลงคิว'; show('formError'); return; }
+      $('submit').disabled = true;
+      try {
+        renderTicket(await api({
+          action: 'join',
+          name: $('name').value,
+          service: document.querySelector('input[name=service]:checked').value,
+          consent: true,
+        }));
+      } catch (err) {
+        $('formError').textContent = err.message; show('formError');
+      } finally {
+        $('submit').disabled = false;
+      }
+    });
+  }
+
+  (async () => {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      renderForm(await liff.getProfile());
+      await refresh();
+      $('refresh').addEventListener('click', () => refresh().catch(e => alert(e.message)));
+      setInterval(() => { if (!$('ticket').hidden) refresh().catch(() => {}); }, 30000);
+    } catch (err) {
+      show('loading', false);
+      $('fatal').textContent = 'เปิดหน้าลงคิวไม่สำเร็จ: ' + err.message;
+      show('fatal');
+    }
+  })();
+</script>
+</body>
+</html>
