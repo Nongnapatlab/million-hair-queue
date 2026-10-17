@@ -3,399 +3,417 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Million Hair · หลังบ้าน</title>
+<title>Million Hair Studio · Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #14294A; --navy-2: #1F3A63; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C; --orange-soft: #FBE9DF;
-    --gold: #F4A259; --bg: #F4F6F3; --card: #FCFDFB; --line: #DDE3DF; --text: #14294A; --muted: #4A5568;
+    --paper: #F3F3F1; --card: #FBFBFA; --line: #D3D8DE; --ink: #1B2533; --muted: #6E7887;
+    --steel: #5A7FA8; --steel-d: #46698F; --steel-soft: #E4EBF3; --navy: #1E2B3C; --navy-2: #2A3B52; --red: #B4423A; --amber: #B7791F; --green: #2F7D5B;
+    --th: 'IBM Plex Sans Thai', Tahoma, sans-serif; --en: 'Barlow Condensed', 'Arial Narrow', sans-serif; --mono: 'IBM Plex Mono', Menlo, monospace;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sarabun', Tahoma, sans-serif; font-size: 15px; }
-  .layout { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
-  aside { background: var(--navy); color: #BFD0E0; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
-  aside .brand { color: var(--gold); font: 600 13px 'Prompt', sans-serif; letter-spacing: 3px; padding: 0 12px; }
-  aside .shop { color: #F4F6F3; font: 600 20px 'Prompt', sans-serif; padding: 2px 12px 20px; }
-  aside .group { font-size: 12px; color: #8FA3BC; padding: 14px 12px 6px; }
-  aside a { display: flex; gap: 10px; align-items: center; color: #DCE6F2; text-decoration: none; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
-  aside a.on { background: var(--navy-2); color: #FFF; box-shadow: inset 3px 0 0 var(--gold); }
-  aside a:hover { background: var(--navy-2); }
-  aside .me { margin-top: auto; font-size: 13px; color: #8FA3BC; padding: 12px; }
-  main { padding: 28px 32px 48px; max-width: 1200px; width: 100%; }
-  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-  h1 { font: 600 28px 'Prompt', sans-serif; margin: 0; }
-  h2 { font: 600 17px 'Prompt', sans-serif; margin: 0 0 12px; }
-  .sub { color: var(--muted); margin-top: 4px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
-  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
-  .kpi span { color: var(--muted); font-size: 13px; }
-  .kpi b { display: block; font: 600 28px 'Prompt', sans-serif; margin: 2px 0; }
-  .kpi small { font-size: 12px; color: var(--muted); }
-  .kpi small.up { color: var(--teal); } .kpi small.down { color: var(--orange); }
-  button, .btn { font: 600 14px 'Prompt', sans-serif; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer; background: var(--teal); color: #F4F6F3; }
-  button.ghost { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
-  button.warn { background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
-  button.dark { background: var(--navy); }
-  button:disabled { opacity: .5; cursor: default; }
-  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-  .tabs button { background: var(--card); color: var(--muted); border: 1px solid var(--line); }
-  .tabs button.on { background: var(--navy); color: #F4F6F3; border-color: var(--navy); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 13px; color: var(--muted); font-weight: 600; background: #EEF2EF; }
-  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #E3E8E5; color: var(--navy); white-space: nowrap; }
-  .pill.รอคิว { background: #DCE6F2; } .pill.ใกล้ถึงคิว { background: var(--orange-soft); color: var(--orange); }
-  .pill.รับบริการ { background: var(--teal-soft); color: var(--teal); } .pill.เสร็จสิ้น { background: #E3E8E5; color: var(--muted); }
-  .pill.ไม่มา { background: #F3E3E3; color: #9B2C2C; }
-  .tag { font-size: 12px; color: var(--muted); }
-  .q { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
-  .q:last-child { border-bottom: 0; }
-  .q .no { font: 600 30px 'Prompt', sans-serif; text-align: center; }
-  .q .who b { font-size: 16px; }
-  .q .who div { color: var(--muted); font-size: 13px; margin-top: 2px; }
-  .q .act { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .bars { display: grid; gap: 6px; }
-  .bar { display: grid; grid-template-columns: 52px 1fr 40px; gap: 10px; align-items: center; font-size: 13px; }
-  .bar i { display: block; height: 12px; border-radius: 6px; background: var(--teal); min-width: 3px; }
-  .bar span:last-child { text-align: right; color: var(--muted); }
-  form.walkin { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1.4fr auto; gap: 10px; align-items: end; }
-  label { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
-  input, select { font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); }
-  .empty { color: var(--muted); text-align: center; padding: 20px; }
-  .error { color: var(--orange); font-weight: 600; }
-  .gate { max-width: 560px; margin: 80px auto; }
-  code { background: #EEF2EF; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--th); font-size: 14px; }
+  button { font: inherit; cursor: pointer; }
+  input, select, textarea { font: inherit; color: inherit; padding: 8px 10px; border: 1px solid var(--line); background: #fff; }
   [hidden] { display: none !important; }
-  @media (max-width: 860px) {
-    .layout { grid-template-columns: 1fr; }
-    aside { flex-direction: row; flex-wrap: wrap; padding: 12px; }
-    aside .group, aside .me { display: none; }
-    aside .shop { padding: 2px 12px; width: 100%; }
-    main { padding: 20px 16px; }
-    .grid2, form.walkin { grid-template-columns: 1fr; }
-    .q { grid-template-columns: 48px 1fr; } .q .act { grid-column: 1 / -1; justify-content: flex-start; }
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  aside { background: var(--navy); color: #C6D2E1; padding: 22px 14px; display: flex; flex-direction: column; gap: 2px; }
+  aside .logo { font: 100 34px 'Josefin Sans', var(--en); letter-spacing: 4px; color: #F3F3F1; padding: 0 10px; font-weight: 700; font-family: var(--en); }
+  aside .logo small { display: block; font: 500 10px var(--mono); letter-spacing: 4px; color: #9DB7D5; margin-top: 2px; }
+  aside .grp { font: 500 10px var(--mono); letter-spacing: 2px; color: #7D8FA6; padding: 22px 10px 6px; }
+  aside a { color: #DCE6F2; text-decoration: none; padding: 9px 10px; cursor: pointer; display: block; }
+  aside a.on { background: var(--navy-2); box-shadow: inset 3px 0 0 #9DB7D5; color: #fff; }
+  aside .me { margin-top: auto; font-size: 12px; color: #7D8FA6; padding: 10px; }
+  main { padding: 24px 28px 48px; min-width: 0; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+  .eyebrow { font: 500 11px var(--mono); letter-spacing: 2px; color: var(--steel-d); }
+  h1 { margin: 2px 0 0; font-size: 26px; font-weight: 700; }
+  h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+  .btn { border: 1px solid var(--steel); background: var(--steel); color: #fff; padding: 8px 14px; font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--steel-d); }
+  .btn.dark { background: var(--navy); border-color: var(--navy); }
+  .btn.warn { background: transparent; color: var(--red); border-color: var(--red); }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .card { background: var(--card); border: 1px solid var(--line); padding: 16px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); padding: 12px 14px; }
+  .kpi span { font: 500 10.5px var(--mono); letter-spacing: 1px; color: var(--muted); }
+  .kpi b { display: block; font: 700 30px var(--en); margin: 2px 0; }
+  .kpi small { font-size: 11.5px; color: var(--muted); }
+  .kpi small.up { color: var(--green); } .kpi small.down { color: var(--red); }
+  .tabs { display: flex; border: 1px solid var(--line); background: var(--card); }
+  .tabs button { border: 0; border-left: 1px solid var(--line); background: none; padding: 7px 12px; }
+  .tabs button:first-child { border-left: 0; }
+  .tabs button.on { background: var(--navy); color: #fff; }
+
+  /* schedule */
+  .sched { display: grid; overflow-x: auto; background: var(--card); border: 1px solid var(--line); }
+  .sched .hd { position: sticky; top: 0; background: var(--navy); color: #fff; padding: 8px 10px; font: 700 17px var(--en); letter-spacing: .5px; border-left: 1px solid #34465C; }
+  .sched .hd small { display: block; font: 500 10px var(--mono); color: #9DB7D5; letter-spacing: 1px; }
+  .times { position: relative; border-right: 1px solid var(--line); }
+  .times div { height: 36px; font: 500 10.5px var(--mono); color: var(--muted); padding: 2px 6px; border-top: 1px solid var(--line); }
+  .col { position: relative; border-left: 1px solid var(--line);
+    background: repeating-linear-gradient(to bottom, transparent 0 35px, var(--line) 35px 36px); }
+  .blk { position: absolute; left: 4px; right: 4px; padding: 4px 7px; border-left: 4px solid var(--steel); background: var(--steel-soft);
+    font-size: 12px; overflow: hidden; cursor: pointer; text-align: left; border-top: 0; border-right: 0; border-bottom: 0; }
+  .blk b { display: block; font-size: 12.5px; }
+  .blk small { color: var(--muted); }
+  .blk.มาถึงแล้ว { border-color: var(--amber); background: #FBF1DE; }
+  .blk.รับบริการ { border-color: var(--green); background: #E1F1E8; }
+  .blk.เสร็จสิ้น { border-color: #9AA5B4; background: #ECEEF1; color: var(--muted); }
+  .blk.ไม่มา { border-color: var(--red); background: #F6E3E1; }
+  .blk.ยกเลิก { display: none; }
+  .pill { display: inline-block; font: 500 10.5px var(--mono); padding: 2px 8px; border: 1px solid currentColor; letter-spacing: .5px; }
+  .pill.ยืนยันแล้ว { color: var(--steel-d); } .pill.มาถึงแล้ว { color: var(--amber); } .pill.รับบริการ { color: var(--green); }
+  .pill.เสร็จสิ้น { color: var(--muted); } .pill.ไม่มา, .pill.ยกเลิก { color: var(--red); }
+
+  /* drawer */
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 100vw); background: var(--card); border-left: 1px solid var(--line);
+    box-shadow: -12px 0 40px rgba(20, 30, 45, .15); padding: 20px; overflow-y: auto; z-index: 20; }
+  .drawer .x { position: absolute; right: 14px; top: 10px; border: 0; background: none; font-size: 24px; }
+  .kv { display: grid; grid-template-columns: 110px 1fr; gap: 8px 12px; font-size: 13.5px; margin: 14px 0; }
+  .kv span { color: var(--muted); }
+  .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+  .thumbs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .thumbs a { font-size: 12px; color: var(--steel-d); }
+  .shade { position: fixed; inset: 0; background: rgba(20, 30, 45, .25); z-index: 15; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 500 10.5px var(--mono); letter-spacing: 1px; color: var(--muted); background: #EEF0F2; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .bars { display: grid; gap: 5px; }
+  .bar { display: grid; grid-template-columns: 48px 1fr 34px; gap: 8px; align-items: center; font-size: 12px; }
+  .bar i { height: 11px; background: var(--steel); min-width: 2px; display: block; }
+  .bar span:last-child { text-align: right; color: var(--muted); }
+  .empty { color: var(--muted); text-align: center; padding: 18px; }
+  .err { color: var(--red); font-weight: 600; }
+  .gate { max-width: 560px; margin: 80px auto; }
+  code { background: #EEF0F2; padding: 2px 6px; word-break: break-all; }
+  .form { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  .form .wide { grid-column: span 4; }
+  .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink); font-size: 13px; }
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; } aside { flex-direction: row; flex-wrap: wrap; } aside .grp, aside .me { display: none; }
+    main { padding: 16px; } .grid2, .form { grid-template-columns: 1fr; } .form .wide { grid-column: auto; }
   }
-  @media print {
-    aside, .noprint { display: none !important; }
-    .layout { display: block; } main { padding: 0; } body { background: #fff; }
-    .card, .kpi { break-inside: avoid; }
-  }
+  @media print { aside, .noprint { display: none !important; } .layout { display: block; } main { padding: 0; } body { background: #fff; } .card, .kpi { break-inside: avoid; } }
 </style>
 </head>
 <body>
-<div id="gate" class="card gate">
-  <h2>Million Hair · หลังบ้าน</h2>
-  <p id="gateMsg">กำลังเข้าสู่ระบบด้วย LINE…</p>
-</div>
+<div id="gate" class="card gate"><h2>Million Hair Studio · Admin</h2><p id="gateMsg">กำลังเข้าสู่ระบบด้วย LINE…</p></div>
 
 <div class="layout" id="app" hidden>
   <aside>
-    <div class="brand">MILLION HAIR</div>
-    <div class="shop">หลังบ้านร้าน</div>
-    <div class="group">ภาพรวม</div>
-    <a data-view="queue" class="on">🗂️ จัดการคิว</a>
-    <a data-view="report">📈 รายงาน</a>
-    <div class="group">ลิงก์</div>
-    <a href="../" target="_blank">📱 หน้าลูกค้า (LIFF)</a>
+    <div class="logo">MILLION<small>✦ HAIR STUDIO ✦</small></div>
+    <div class="grp">OPERATIONS</div>
+    <a data-view="sched" class="on">ตารางนัด</a>
+    <a data-view="report">รายงาน</a>
+    <div class="grp">LINKS</div>
+    <a href="../" target="_blank">หน้าลูกค้า (LIFF) ↗</a>
     <div class="me" id="me"></div>
   </aside>
 
   <main>
-    <!-- จัดการคิว -->
-    <section data-page="queue">
+    <!-- ตารางนัด -->
+    <section data-page="sched">
       <div class="top">
-        <div><h1>จัดการคิววันนี้</h1><div class="sub" id="today"></div></div>
-        <button class="ghost noprint" id="reloadQueue">↻ รีเฟรช</button>
+        <div><div class="eyebrow">SCHEDULE</div><h1 id="dayTitle">ตารางนัด</h1></div>
+        <div class="row noprint">
+          <button class="btn ghost" id="prevDay">‹</button>
+          <input type="date" id="dayPick">
+          <button class="btn ghost" id="nextDay">›</button>
+          <button class="btn ghost" id="todayBtn">วันนี้</button>
+          <button class="btn" id="addBtn">+ เพิ่มนัด</button>
+        </div>
       </div>
-      <div class="kpis" id="queueKpis"></div>
-
-      <div class="card noprint">
-        <h2>เพิ่มคิว Walk-in</h2>
-        <form class="walkin" id="walkin">
-          <label>ชื่อลูกค้า<input id="wName" required maxlength="50"></label>
-          <label>บริการ<select id="wService"></select></label>
-          <label>ช่าง<select id="wStylist"></select></label>
-          <label>หมายเหตุ<input id="wNote" maxlength="200"></label>
-          <button type="submit">+ เพิ่มคิว</button>
+      <div class="kpis" id="dayKpis"></div>
+      <div class="card noprint" id="addForm" hidden>
+        <h2>เพิ่มนัด Walk-in / โทรจอง</h2>
+        <form class="form" id="add">
+          <label>ชื่อลูกค้า<input id="aName" required maxlength="50"></label>
+          <label>เบอร์โทร<input id="aPhone" maxlength="12"></label>
+          <label>ช่องทาง<select id="aChannel"><option>Walk-in</option><option>โทรจอง</option></select></label>
+          <label>เวลาเริ่ม<select id="aTime"></select></label>
+          <label>ช่าง<select id="aStylist"></select></label>
+          <label>ความยาวผม<select id="aLength"></select></label>
+          <label class="wide">บริการ<div class="checks" id="aServices"></div></label>
+          <label class="wide">หมายเหตุ<input id="aNote" maxlength="300"></label>
+          <div class="wide row"><button class="btn" type="submit">บันทึกนัด</button><span class="err" id="aErr"></span></div>
         </form>
       </div>
-
-      <div class="card">
-        <h2>คิวที่กำลังดำเนินการ</h2>
-        <div id="activeList"></div>
-      </div>
-      <div class="card">
-        <h2>เสร็จแล้ว / ไม่มา</h2>
-        <div id="doneList"></div>
-      </div>
+      <div class="sched" id="sched"></div>
     </section>
 
     <!-- รายงาน -->
     <section data-page="report" hidden>
       <div class="top">
-        <div><h1>รายงาน</h1><div class="sub" id="rangeLabel"></div></div>
-        <div class="tabs noprint">
-          <button id="csv" class="ghost">⬇ Export CSV</button>
-          <button id="print" class="dark">🖨 บันทึก PDF</button>
-        </div>
+        <div><div class="eyebrow">REPORTS</div><h1>รายงาน</h1><div style="color:var(--muted)" id="rangeLabel"></div></div>
+        <div class="row noprint"><button class="btn ghost" id="csv">Export CSV</button><button class="btn dark" id="print">บันทึก PDF</button></div>
       </div>
-      <div class="tabs noprint" id="presets" style="margin-bottom:16px">
-        <button data-p="today" class="on">วันนี้</button>
-        <button data-p="yesterday">เมื่อวาน</button>
-        <button data-p="7">ย้อนหลัง 7 วัน</button>
-        <button data-p="30">ย้อนหลัง 30 วัน</button>
-        <button data-p="month">เดือนนี้</button>
+      <div class="tabs noprint" id="presets" style="margin-bottom:16px;width:max-content;max-width:100%;flex-wrap:wrap">
+        <button data-p="today" class="on">วันนี้</button><button data-p="tomorrow">พรุ่งนี้</button><button data-p="next7">ล่วงหน้า 7 วัน</button>
+        <button data-p="last7">ย้อนหลัง 7 วัน</button><button data-p="last30">ย้อนหลัง 30 วัน</button><button data-p="month">เดือนนี้</button>
       </div>
-      <div class="kpis" id="reportKpis"></div>
+      <div class="kpis" id="rKpis"></div>
       <div class="grid2">
-        <div class="card"><h2>บริการยอดนิยม</h2><div id="topServices"></div></div>
-        <div class="card"><h2>รายช่าง</h2><div id="byStylist"></div></div>
+        <div class="card"><h2>บริการยอดนิยม</h2><div id="rServices"></div></div>
+        <div class="card"><h2>รายช่าง</h2><div id="rStylists"></div></div>
       </div>
       <div class="grid2">
-        <div class="card"><h2>จำนวนคิวรายชั่วโมง</h2><div class="bars" id="hourly"></div></div>
-        <div class="card"><h2>ช่องทางลงคิว</h2><div id="channels"></div></div>
+        <div class="card"><h2>เวลาเริ่มนัด (รายชั่วโมง)</h2><div class="bars" id="rHours"></div></div>
+        <div class="card"><h2>ช่องทางการจอง</h2><div id="rChannels"></div></div>
       </div>
-      <div class="card"><h2>รายการคิวทั้งหมด</h2><div id="allRows" style="overflow-x:auto"></div></div>
+      <div class="card"><h2>รายการนัดทั้งหมด</h2><div id="rList" style="overflow-x:auto"></div></div>
     </section>
   </main>
 </div>
 
+<div class="shade" id="shade" hidden></div>
+<div class="drawer" id="drawer" hidden></div>
+
 <script src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script>
 <script>
-  const LIFF_ID = '2012052973-UNW6H5DF';
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
+const LIFF_ID = '2012052973-UNW6H5DF';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const thLong = d => d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+const toMin = hm => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
+const baht = n => '฿' + Math.round(n).toLocaleString('en-US');
+const ROW = 36, STEP = 30;
+const NEXT = {
+  'ยืนยันแล้ว': [['มาถึงแล้ว', 'มาถึงแล้ว', 'btn'], ['ไม่มา', 'ไม่มา', 'btn warn'], ['ยกเลิก', 'ยกเลิกนัด', 'btn warn']],
+  'มาถึงแล้ว': [['รับบริการ', 'เริ่มบริการ', 'btn'], ['ไม่มา', 'ไม่มา', 'btn warn']],
+  'รับบริการ': [['เสร็จสิ้น', 'เสร็จสิ้น', 'btn dark']],
+};
+let C = null, day = new Date(), dayRows = [], reportRows = [];
 
-  const $ = id => document.getElementById(id);
-  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const pad = n => String(n).padStart(2, '0');
-  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const hm = iso => iso ? new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '–';
-  const mins = (a, b) => (a && b) ? (new Date(b) - new Date(a)) / 60000 : null;
-  const avg = xs => xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null;
-  const thDate = d => d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
-  let config = null, reportRows = [];
+async function api(payload) {
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }) });
+  return res.json();
+}
+async function adminApi(p) { const d = await api(p); if (!d.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด'); return d; }
 
-  async function api(payload) {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }),
-    });
-    return res.json();
-  }
-  async function adminApi(payload) {
-    const d = await api(payload);
-    if (!d.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
-    return d;
-  }
+document.querySelectorAll('aside a[data-view]').forEach(a => a.onclick = () => {
+  document.querySelectorAll('aside a[data-view]').forEach(x => x.classList.toggle('on', x === a));
+  document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== a.dataset.view);
+  if (a.dataset.view === 'report' && !reportRows.length) loadReport('today');
+});
 
-  // ---------- navigation ----------
-  document.querySelectorAll('aside a[data-view]').forEach(a => a.addEventListener('click', () => {
-    document.querySelectorAll('aside a[data-view]').forEach(x => x.classList.toggle('on', x === a));
-    document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== a.dataset.view);
-    if (a.dataset.view === 'report' && !reportRows.length) loadReport('today');
-  }));
+// ---------- schedule ----------
+async function loadDay() {
+  $('dayPick').value = ymd(day);
+  $('dayTitle').textContent = thLong(day);
+  const d = await adminApi({ action: 'admin_day', date: ymd(day) });
+  C = d.config; dayRows = d.bookings;
+  const live = dayRows.filter(b => b.status !== 'ยกเลิก');
+  const n = s => dayRows.filter(b => b.status === s).length;
+  const closed = C.shop.closedDays.includes(day.getDay());
+  $('dayKpis').innerHTML = [
+    ['BOOKINGS', live.length, closed ? 'ร้านปิดวันนี้' : ''], ['ARRIVED / IN CHAIR', n('มาถึงแล้ว') + n('รับบริการ'), ''],
+    ['DONE', n('เสร็จสิ้น'), ''], ['NO-SHOW', n('ไม่มา'), ''], ['CANCELLED', n('ยกเลิก'), ''],
+    ['EST. REVENUE', baht(live.filter(b => b.status !== 'ไม่มา').reduce((s, b) => s + b.price, 0)), 'ราคาประเมิน'],
+    ['SLIP TO CHECK', dayRows.filter(b => /รอตรวจ/.test(b.depositStatus) && b.status !== 'ยกเลิก').length, 'มัดจำรอตรวจ'],
+  ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
 
-  // ---------- queue board ----------
-  const NEXT = {
-    'รอคิว': [['ใกล้ถึงคิว', '📣 เรียกคิว (แจ้ง LINE)', ''], ['ไม่มา', 'ไม่มา', 'warn']],
-    'ใกล้ถึงคิว': [['รับบริการ', '✂️ เริ่มบริการ', ''], ['ไม่มา', 'ไม่มา', 'warn']],
-    'รับบริการ': [['เสร็จสิ้น', '✓ เสร็จสิ้น', 'dark']],
+  const open = C.shop.open, close = C.shop.close, rows = (close - open) / STEP;
+  const cols = C.stylists.length;
+  $('sched').style.gridTemplateColumns = `56px repeat(${cols}, minmax(150px, 1fr))`;
+  let html = `<div class="hd" style="border-left:0"></div>` + C.stylists.map(s => `<div class="hd">${esc(s.name)}<small>${esc(s.role)}</small></div>`).join('');
+  html += `<div class="times">${[...Array(rows)].map((_, i) => `<div>${i % 2 ? '' : pad(Math.floor((open + i * STEP) / 60)) + ':00'}</div>`).join('')}</div>`;
+  html += C.stylists.map(s => `<div class="col" style="height:${rows * ROW}px">${live.filter(b => b.stylist === s.name).map(b => {
+    const top = (toMin(b.start) - open) / STEP * ROW, h = Math.max(ROW - 2, (toMin(b.end) - toMin(b.start)) / STEP * ROW - 2);
+    return `<button class="blk ${esc(b.status)}" style="top:${top}px;height:${h}px" data-id="${esc(b.id)}">
+      <b>${b.start}–${b.end} · ${esc(b.name)}</b><small>${esc(b.services)}${b.channel !== 'LINE' ? ' · ' + esc(b.channel) : ''}</small></button>`;
+  }).join('')}</div>`).join('');
+  $('sched').innerHTML = html;
+  $('sched').querySelectorAll('[data-id]').forEach(el => el.onclick = () => openDrawer(el.dataset.id));
+  fillAddForm();
+}
+
+function openDrawer(id) {
+  const b = dayRows.find(x => x.id === id);
+  if (!b) return;
+  const acts = (NEXT[b.status] || []).map(([to, label, cls]) => `<button class="${cls}" data-to="${esc(to)}">${esc(label)}</button>`).join('');
+  $('drawer').innerHTML = `<button class="x" id="dx">×</button>
+    <div class="eyebrow">${esc(b.id)}</div><h1 style="font-size:22px">${esc(b.name)}</h1>
+    <span class="pill ${esc(b.status)}">${esc(b.status)}</span>
+    <div class="kv">
+      <span>เวลา</span><b>${b.start} – ${b.end} (${b.duration} นาที)</b>
+      <span>ช่าง</span><div>${esc(b.stylist)}</div>
+      <span>บริการ</span><div>${esc(b.services)} · ความยาว ${esc(b.length)}</div>
+      <span>ราคาประเมิน</span><div>${baht(b.price)}</div>
+      <span>มัดจำ</span><div>${b.deposit ? baht(b.deposit) + ' · ' : ''}${esc(b.depositStatus)}</div>
+      <span>โทร</span><div>${b.phone ? `<a href="tel:${esc(b.phone)}">${esc(b.phone)}</a>` : '–'}</div>
+      <span>สรรพนาม</span><div>${esc(b.pronoun || '–')}</div>
+      <span>เคมี 12 เดือน</span><div>${esc(b.chem || '–')}</div>
+      <span>หมายเหตุ</span><div>${esc(b.note || '–')}</div>
+      <span>รูปอ้างอิง</span><div class="thumbs">${b.photos.length ? b.photos.map((u, i) => `<a href="${esc(u)}" target="_blank">รูป ${i + 1} ↗</a>`).join('') : '–'}</div>
+      <span>สลิป</span><div>${b.slip ? `<a href="${esc(b.slip)}" target="_blank">เปิดสลิป ↗</a>` : '–'}</div>
+      <span>ลูกค้า</span><div>${b.channel}${b.channel === 'LINE' ? (b.visit > 1 ? ` · มาครั้งที่ ${b.visit}` : ' · ลูกค้าใหม่') : ''}</div>
+      <span>จองเมื่อ</span><div>${esc(b.created)}</div>
+    </div>
+    <div class="acts">${acts}${/รอตรวจ/.test(b.depositStatus) ? '<button class="btn ghost" id="payOk">✓ ตรวจสลิปแล้ว</button>' : ''}</div>`;
+  $('drawer').hidden = $('shade').hidden = false;
+  $('dx').onclick = closeDrawer;
+  $('drawer').querySelectorAll('[data-to]').forEach(btn => btn.onclick = async () => {
+    if (btn.dataset.to === 'ยกเลิก' && !confirm('ยกเลิกนัดนี้?')) return;
+    btn.disabled = true;
+    try { await adminApi({ action: 'admin_set_status', id: b.id, status: btn.dataset.to }); closeDrawer(); await loadDay(); }
+    catch (e) { alert(e.message); btn.disabled = false; }
+  });
+  if ($('payOk')) $('payOk').onclick = async () => {
+    try { await adminApi({ action: 'admin_deposit', id: b.id }); closeDrawer(); await loadDay(); } catch (e) { alert(e.message); }
   };
+}
+function closeDrawer() { $('drawer').hidden = $('shade').hidden = true; }
+$('shade').onclick = closeDrawer;
 
-  function visitTag(r) {
-    if (r.channel === 'Walk-in') return 'Walk-in';
-    return r.visit > 1 ? `LINE · มาครั้งที่ ${r.visit}` : 'LINE · ลูกค้าใหม่';
-  }
+function fillAddForm() {
+  if ($('aStylist').options.length) return;
+  $('aStylist').innerHTML = `<option value="any">ใครก็ได้ (ช่างที่ว่าง)</option>` + C.stylists.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  $('aLength').innerHTML = C.lengths.map(l => `<option value="${l.code}" ${l.code === 'M' ? 'selected' : ''}>${l.th} (${l.code})</option>`).join('');
+  $('aServices').innerHTML = C.services.map(s => `<label style="display:flex;gap:6px;align-items:center;color:var(--ink)"><input type="checkbox" value="${s.id}">${esc(s.th)}</label>`).join('');
+  const t = [];
+  for (let m = C.shop.open; m < C.shop.close; m += STEP) t.push(`${pad(Math.floor(m / 60))}:${pad(m % 60)}`);
+  $('aTime').innerHTML = t.map(x => `<option>${x}</option>`).join('');
+}
+$('addBtn').onclick = () => { $('addForm').hidden = !$('addForm').hidden; };
+$('add').onsubmit = async e => {
+  e.preventDefault(); $('aErr').textContent = '';
+  const services = [...$('aServices').querySelectorAll('input:checked')].map(x => x.value);
+  try {
+    await adminApi({ action: 'admin_book', date: ymd(day), time: $('aTime').value, name: $('aName').value, phone: $('aPhone').value,
+      channel: $('aChannel').value, stylist: $('aStylist').value, length: $('aLength').value, services, note: $('aNote').value });
+    $('add').reset(); $('addForm').hidden = true; await loadDay();
+  } catch (err) { $('aErr').textContent = err.message; }
+};
+$('prevDay').onclick = () => { day = addDays(day, -1); loadDay().catch(e => alert(e.message)); };
+$('nextDay').onclick = () => { day = addDays(day, 1); loadDay().catch(e => alert(e.message)); };
+$('todayBtn').onclick = () => { day = new Date(); loadDay().catch(e => alert(e.message)); };
+$('dayPick').onchange = () => { if ($('dayPick').value) { day = parseYmd($('dayPick').value); loadDay().catch(e => alert(e.message)); } };
 
-  function queueItem(r) {
-    const waited = Math.round(mins(r.ts, new Date().toISOString()));
-    const meta = [r.service, r.stylist, r.phone && `โทร ${r.phone}`, `ลงคิว ${hm(r.ts)} (${waited} นาทีที่แล้ว)`]
-      .filter(Boolean).map(esc).join(' · ');
-    const buttons = (NEXT[r.status] || []).map(([to, label, cls]) =>
-      `<button class="${cls}" data-row="${r.row}" data-to="${esc(to)}">${esc(label)}</button>`).join('');
-    return `<div class="q"><div class="no">${esc(r.no)}</div>
-      <div class="who"><b>${esc(r.name)}</b> <span class="pill ${esc(r.status)}">${esc(r.status)}</span> <span class="tag">${esc(visitTag(r))}</span>
-      <div>${meta}</div>${r.note ? `<div>📝 ${esc(r.note)}</div>` : ''}</div>
-      <div class="act">${buttons}</div></div>`;
-  }
+// ---------- reports ----------
+function range(p) {
+  const t = new Date(new Date().toDateString());
+  return { today: [t, t], tomorrow: [addDays(t, 1), addDays(t, 1)], next7: [t, addDays(t, 6)], last7: [addDays(t, -6), t],
+    last30: [addDays(t, -29), t], month: [new Date(t.getFullYear(), t.getMonth(), 1), new Date(t.getFullYear(), t.getMonth() + 1, 0)] }[p];
+}
+function openDays(from, to) {
+  let n = 0; for (let d = from; d <= to; d = addDays(d, 1)) if (!C.shop.closedDays.includes(d.getDay())) n++; return n;
+}
+function stats(rows, from, to) {
+  const live = rows.filter(b => b.status !== 'ยกเลิก');
+  const done = rows.filter(b => b.status === 'เสร็จสิ้น'), ns = rows.filter(b => b.status === 'ไม่มา');
+  const line = live.filter(b => b.channel === 'LINE');
+  const capacity = openDays(from, to) * (C.shop.close - C.shop.open) * C.stylists.length;
+  const lead = line.map(b => (parseYmd(b.date) - parseYmd(b.created.slice(0, 10))) / 86400000).filter(x => x >= 0);
+  return {
+    total: live.length, done: done.length, noShow: ns.length, cancelled: rows.length - live.length,
+    noShowPct: done.length + ns.length ? ns.length / (done.length + ns.length) * 100 : 0,
+    cancelPct: rows.length ? (rows.length - live.length) / rows.length * 100 : 0,
+    newC: line.filter(b => b.visit === 1).length, ret: line.filter(b => b.visit > 1).length,
+    revenue: done.reduce((s, b) => s + b.price, 0),
+    booked: live.filter(b => b.status !== 'ไม่มา').reduce((s, b) => s + b.price, 0),
+    util: capacity ? live.reduce((s, b) => s + b.duration, 0) / capacity * 100 : 0,
+    lead: lead.length ? lead.reduce((a, b) => a + b, 0) / lead.length : null,
+  };
+}
+function delta(c, p, lowerBetter) {
+  if (p == null || c == null) return '<small>—</small>';
+  const d = c - p; if (Math.abs(d) < 0.05) return '<small>เท่ากับช่วงก่อน</small>';
+  const good = lowerBetter ? d < 0 : d > 0;
+  return `<small class="${good ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'} ${Math.abs(d) >= 100 ? Math.round(Math.abs(d)).toLocaleString('en-US') : Math.abs(d).toFixed(Number.isInteger(d) ? 0 : 1)} จากช่วงก่อน</small>`;
+}
 
-  async function loadQueue() {
-    const d = await adminApi({ action: 'admin_queue' });
-    const rows = d.rows;
-    const count = s => rows.filter(r => r.status === s).length;
-    $('queueKpis').innerHTML = [['รอคิว', count('รอคิว')], ['ใกล้ถึงคิว', count('ใกล้ถึงคิว')], ['รับบริการ', count('รับบริการ')],
-      ['เสร็จสิ้น', count('เสร็จสิ้น')], ['ไม่มา', count('ไม่มา')]]
-      .map(([k, v]) => `<div class="kpi"><span>${k}</span><b>${v}</b></div>`).join('');
-    const active = rows.filter(r => NEXT[r.status]);
-    const done = rows.filter(r => !NEXT[r.status]).reverse();
-    $('activeList').innerHTML = active.length ? active.map(queueItem).join('') : '<p class="empty">ยังไม่มีคิวที่รออยู่</p>';
-    $('doneList').innerHTML = done.length ? done.map(queueItem).join('') : '<p class="empty">ยังไม่มี</p>';
-  }
+async function loadReport(p) {
+  document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+  const [from, to] = range(p);
+  const days = Math.round((to - from) / 86400000) + 1;
+  const pFrom = addDays(from, -days), pTo = addDays(from, -1);
+  $('rangeLabel').textContent = days === 1 ? thLong(from) : `${thLong(from)} – ${thLong(to)}`;
+  $('rKpis').innerHTML = '<p class="empty">กำลังโหลด…</p>';
+  const d = await adminApi({ action: 'admin_report', from: ymd(pFrom), to: ymd(to) });
+  C = d.config;
+  reportRows = d.bookings.filter(b => b.date >= ymd(from));
+  const prev = d.bookings.filter(b => b.date <= ymd(pTo));
+  const c = stats(reportRows, from, to), v = prev.length ? stats(prev, pFrom, pTo) : {};
+  $('rKpis').innerHTML = [
+    ['BOOKINGS', c.total, delta(c.total, v.total)], ['DONE', c.done, delta(c.done, v.done)],
+    ['NO-SHOW RATE', c.noShowPct.toFixed(0) + '%', delta(c.noShowPct, v.noShowPct, true)],
+    ['CANCEL RATE', c.cancelPct.toFixed(0) + '%', delta(c.cancelPct, v.cancelPct, true)],
+    ['NEW / RETURNING', `${c.newC} / ${c.ret}`, '<small>เฉพาะจองผ่าน LINE</small>'],
+    ['REVENUE (DONE)', baht(c.revenue), delta(c.revenue, v.revenue)],
+    ['BOOKED VALUE', baht(c.booked), '<small>มูลค่านัดทั้งหมด</small>'],
+    ['CHAIR UTILIZATION', c.util.toFixed(0) + '%', delta(c.util, v.util)],
+    ['AVG LEAD TIME', c.lead == null ? '–' : c.lead.toFixed(1) + ' วัน', '<small>จองล่วงหน้าเฉลี่ย</small>'],
+  ].map(([k, val, s]) => `<div class="kpi"><span>${k}</span><b>${val}</b>${s}</div>`).join('');
 
-  document.addEventListener('click', async e => {
-    const b = e.target.closest('button[data-to]');
-    if (!b) return;
-    b.disabled = true;
-    try {
-      await adminApi({ action: 'admin_set_status', row: Number(b.dataset.row), status: b.dataset.to });
-      await loadQueue();
-    } catch (err) { alert(err.message); b.disabled = false; }
-  });
-  $('reloadQueue').addEventListener('click', () => loadQueue().catch(e => alert(e.message)));
+  const live = reportRows.filter(b => b.status !== 'ยกเลิก');
+  const tbl = (head, body) => body.length ? `<table><tr>${head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('')}</tr>${body.join('')}</table>` : '<p class="empty">ไม่มีข้อมูลในช่วงนี้</p>';
+  const svc = {};
+  live.forEach(b => b.services.split(', ').forEach(s => { svc[s] = (svc[s] || 0) + 1; }));
+  $('rServices').innerHTML = tbl([['SERVICE'], ['COUNT', 'n'], ['SHARE', 'n']],
+    Object.entries(svc).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td><td class="n">${(n / live.length * 100).toFixed(0)}%</td></tr>`));
+  const cap = openDays(from, to) * (C.shop.close - C.shop.open);
+  $('rStylists').innerHTML = tbl([['STYLIST'], ['BOOKED', 'n'], ['DONE', 'n'], ['NO-SHOW', 'n'], ['REVENUE', 'n'], ['UTIL.', 'n']],
+    C.stylists.map(s => { const r = live.filter(b => b.stylist === s.name); const dn = r.filter(b => b.status === 'เสร็จสิ้น');
+      return `<tr><td>${esc(s.name)}</td><td class="n">${r.length}</td><td class="n">${dn.length}</td><td class="n">${r.filter(b => b.status === 'ไม่มา').length}</td>
+        <td class="n">${baht(dn.reduce((a, b) => a + b.price, 0))}</td><td class="n">${cap ? (r.reduce((a, b) => a + b.duration, 0) / cap * 100).toFixed(0) : 0}%</td></tr>`; }));
+  const hrs = {}; for (let h = C.shop.open / 60; h < C.shop.close / 60; h++) hrs[h] = 0;
+  live.forEach(b => { const h = Number(b.start.slice(0, 2)); if (h in hrs) hrs[h]++; });
+  const max = Math.max(1, ...Object.values(hrs));
+  $('rHours').innerHTML = Object.entries(hrs).map(([h, n]) => `<div class="bar"><span>${pad(h)}:00</span><i style="width:${n / max * 100}%"></i><span>${n}</span></div>`).join('');
+  const ch = {}; live.forEach(b => { ch[b.channel] = (ch[b.channel] || 0) + 1; });
+  $('rChannels').innerHTML = tbl([['CHANNEL'], ['COUNT', 'n'], ['SHARE', 'n']],
+    Object.entries(ch).map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td><td class="n">${(n / live.length * 100).toFixed(0)}%</td></tr>`));
+  $('rList').innerHTML = tbl([['DATE'], ['TIME'], ['ID'], ['NAME'], ['PHONE'], ['STYLIST'], ['SERVICES'], ['PRICE', 'n'], ['DEPOSIT'], ['STATUS']],
+    reportRows.sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)).map(b => `<tr><td>${esc(b.date)}</td><td>${b.start}</td><td>${esc(b.id)}</td>
+      <td>${esc(b.name)}</td><td>${esc(b.phone)}</td><td>${esc(b.stylist)}</td><td>${esc(b.services)}</td><td class="n">${baht(b.price)}</td>
+      <td>${esc(b.depositStatus)}</td><td><span class="pill ${esc(b.status)}">${esc(b.status)}</span></td></tr>`));
+}
+$('presets').onclick = e => { if (e.target.dataset.p) loadReport(e.target.dataset.p).catch(x => alert(x.message)); };
+$('print').onclick = () => window.print();
+$('csv').onclick = () => {
+  const cols = ['date', 'start', 'end', 'id', 'name', 'phone', 'stylist', 'services', 'length', 'price', 'deposit', 'depositStatus', 'status', 'channel', 'visit', 'created', 'arrived', 'started', 'finished', 'cancelled', 'chem', 'note'];
+  const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const csv = '﻿' + [cols.join(','), ...reportRows.map(r => cols.map(k => cell(r[k])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  a.download = `million-hair-report-${ymd(new Date())}.csv`; a.click();
+};
 
-  $('walkin').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = e.submitter; btn.disabled = true;
-    try {
-      await adminApi({ action: 'admin_walkin', name: $('wName').value, service: $('wService').value,
-        stylist: $('wStylist').value, note: $('wNote').value });
-      $('wName').value = ''; $('wNote').value = '';
-      await loadQueue();
-    } catch (err) { alert(err.message); }
-    btn.disabled = false;
-  });
-
-  // ---------- report ----------
-  function range(p) {
-    const now = new Date(); const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-    if (p === 'today') return [t, t];
-    if (p === 'yesterday') return [add(t, -1), add(t, -1)];
-    if (p === 'month') return [new Date(t.getFullYear(), t.getMonth(), 1), t];
-    return [add(t, -(Number(p) - 1)), t];
-  }
-
-  function stats(rows) {
-    const done = rows.filter(r => r.status === 'เสร็จสิ้น');
-    const noShow = rows.filter(r => r.status === 'ไม่มา');
-    const closed = done.length + noShow.length;
-    const priceOf = name => Number(String((config.services.find(s => s.name === name) || {}).price || '').replace(/\D/g, '')) || 0;
-    const line = rows.filter(r => r.channel === 'LINE');
-    return {
-      total: rows.length, done: done.length, noShow: noShow.length,
-      noShowPct: closed ? noShow.length / closed * 100 : 0,
-      newC: line.filter(r => Number(r.visit) === 1).length, returning: line.filter(r => Number(r.visit) > 1).length,
-      wait: avg(rows.map(r => mins(r.ts, r.started)).filter(x => x != null && x >= 0)),
-      service: avg(rows.map(r => mins(r.started, r.finished)).filter(x => x != null && x >= 0)),
-      revenue: done.reduce((s, r) => s + priceOf(r.service), 0),
-    };
-  }
-
-  function delta(cur, prev, lowerIsBetter) {
-    if (prev == null || cur == null) return '<small>—</small>';
-    const diff = cur - prev;
-    if (Math.abs(diff) < 0.05) return '<small>เท่ากับช่วงก่อน</small>';
-    const good = lowerIsBetter ? diff < 0 : diff > 0;
-    return `<small class="${good ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(Number.isInteger(diff) ? 0 : 1)} จากช่วงก่อน</small>`;
-  }
-
-  async function loadReport(p) {
-    document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
-    const [from, to] = range(p);
-    const days = Math.round((to - from) / 86400000) + 1;
-    const prevFrom = new Date(from.getFullYear(), from.getMonth(), from.getDate() - days);
-    $('rangeLabel').textContent = days === 1 ? thDate(from) : `${thDate(from)} – ${thDate(to)}`;
-    $('reportKpis').innerHTML = '<p class="empty">กำลังโหลด…</p>';
-
-    const d = await adminApi({ action: 'admin_report', from: ymd(prevFrom), to: ymd(to) });
-    const inCur = r => ymd(new Date(r.ts)) >= ymd(from);
-    reportRows = d.rows.filter(inCur);
-    const prevRows = d.rows.filter(r => !inCur(r));
-    const c = stats(reportRows), pv = prevRows.length ? stats(prevRows) : {};
-    const f = x => x == null ? '–' : x.toFixed(0);
-
-    $('reportKpis').innerHTML = [
-      ['คิวทั้งหมด', c.total, delta(c.total, pv.total)],
-      ['เสร็จสิ้น', c.done, delta(c.done, pv.done)],
-      ['ไม่มา', c.noShow, delta(c.noShow, pv.noShow, true)],
-      ['อัตราไม่มา', `${c.noShowPct.toFixed(0)}%`, delta(c.noShowPct, pv.noShowPct, true)],
-      ['ลูกค้าใหม่ / กลับมาซ้ำ', `${c.newC} / ${c.returning}`, '<small>เฉพาะคิวผ่าน LINE</small>'],
-      ['เวลารอเฉลี่ย', `${f(c.wait)} นาที`, delta(c.wait, pv.wait, true)],
-      ['เวลาบริการเฉลี่ย', `${f(c.service)} นาที`, '<small>เริ่ม → เสร็จ</small>'],
-      ['รายได้โดยประมาณ', `฿${c.revenue.toLocaleString('th-TH')}`, delta(c.revenue, pv.revenue)],
-    ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b>${v}</b>${s}</div>`).join('');
-
-    const tbl = (head, body) => body.length
-      ? `<table><tr>${head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('')}</tr>${body.join('')}</table>`
-      : '<p class="empty">ไม่มีข้อมูลในช่วงนี้</p>';
-
-    const bySvc = {};
-    reportRows.forEach(r => { bySvc[r.service] = (bySvc[r.service] || 0) + 1; });
-    $('topServices').innerHTML = tbl([['บริการ'], ['คิว', 'num'], ['สัดส่วน', 'num']],
-      Object.entries(bySvc).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
-        `<tr><td>${esc(k)}</td><td class="num">${v}</td><td class="num">${(v / c.total * 100).toFixed(0)}%</td></tr>`));
-
-    const names = [...new Set(reportRows.map(r => r.stylist || 'ไม่ระบุ'))];
-    $('byStylist').innerHTML = tbl([['ช่าง'], ['คิว', 'num'], ['เสร็จ', 'num'], ['ไม่มา', 'num'], ['สำเร็จ', 'num']],
-      names.map(n => {
-        const rs = reportRows.filter(r => (r.stylist || 'ไม่ระบุ') === n);
-        const dn = rs.filter(r => r.status === 'เสร็จสิ้น').length, ns = rs.filter(r => r.status === 'ไม่มา').length;
-        return `<tr><td>${esc(n)}</td><td class="num">${rs.length}</td><td class="num">${dn}</td><td class="num">${ns}</td><td class="num">${dn + ns ? (dn / (dn + ns) * 100).toFixed(0) + '%' : '–'}</td></tr>`;
-      }));
-
-    const hours = {}; for (let h = 10; h < 20; h++) hours[h] = 0;
-    reportRows.forEach(r => { const h = new Date(r.ts).getHours(); if (h in hours) hours[h]++; });
-    const max = Math.max(1, ...Object.values(hours));
-    $('hourly').innerHTML = Object.entries(hours).map(([h, v]) =>
-      `<div class="bar"><span>${h}:00</span><i style="width:${v / max * 100}%"></i><span>${v}</span></div>`).join('');
-
-    const lineN = reportRows.filter(r => r.channel === 'LINE').length;
-    $('channels').innerHTML = tbl([['ช่องทาง'], ['คิว', 'num'], ['สัดส่วน', 'num']],
-      [['LINE', lineN], ['Walk-in', c.total - lineN]].map(([k, v]) =>
-        `<tr><td>${k}</td><td class="num">${v}</td><td class="num">${c.total ? (v / c.total * 100).toFixed(0) : 0}%</td></tr>`));
-
-    $('allRows').innerHTML = tbl([['วันที่'], ['เวลา'], ['คิว', 'num'], ['ลูกค้า'], ['โทร'], ['บริการ'], ['ช่าง'], ['สถานะ'], ['รอ (นาที)', 'num'], ['หมายเหตุ']],
-      reportRows.map(r => `<tr><td>${new Date(r.ts).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</td><td>${hm(r.ts)}</td>
-        <td class="num">${esc(r.no)}</td><td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td>${esc(r.service)}</td><td>${esc(r.stylist)}</td>
-        <td><span class="pill ${esc(r.status)}">${esc(r.status)}</span></td><td class="num">${mins(r.ts, r.started) != null ? Math.round(mins(r.ts, r.started)) : '–'}</td><td>${esc(r.note)}</td></tr>`));
-  }
-
-  $('presets').addEventListener('click', e => { if (e.target.dataset.p) loadReport(e.target.dataset.p).catch(x => alert(x.message)); });
-  $('print').addEventListener('click', () => window.print());
-  $('csv').addEventListener('click', () => {
-    const cols = ['ts', 'no', 'name', 'phone', 'service', 'stylist', 'status', 'channel', 'visit', 'called', 'started', 'finished', 'note'];
-    const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const csv = '﻿' + [cols.join(','), ...reportRows.map(r => cols.map(k => cell(r[k])).join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-    a.download = `million-hair-report-${ymd(new Date())}.csv`;
-    a.click();
-  });
-
-  // ---------- boot ----------
-  (async () => {
-    try {
-      const configP = fetch(`${GAS_URL}?action=config`).then(r => r.json());
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
-      const probe = await api({ action: 'admin_queue' });
-      if (!probe.ok) {
-        if (/หมดอายุ/.test(probe.error) && !sessionStorage.getItem('relogin')) {
-          sessionStorage.setItem('relogin', '1'); liff.logout(); liff.login({ redirectUri: location.href }); return;
-        }
-        $('gateMsg').innerHTML = probe.error === 'NOT_ADMIN'
-          ? `บัญชีนี้ยังไม่ได้รับสิทธิ์แอดมิน<br><br>ให้นำ User ID นี้ไปใส่ใน Script Property <code>ADMIN_USER_IDS</code>:<br><br><code>${esc(probe.userId)}</code>`
-          : `<span class="error">${esc(probe.error)}</span>`;
-        return;
+// ---------- boot ----------
+(async () => {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    const probe = await api({ action: 'admin_day', date: ymd(day) });
+    if (!probe.ok) {
+      if (/หมดอายุ/.test(probe.error) && !sessionStorage.getItem('relogin')) {
+        sessionStorage.setItem('relogin', '1'); liff.logout(); liff.login({ redirectUri: location.href }); return;
       }
-      config = await configP;
-      $('wService').innerHTML = config.services.map(s => `<option>${esc(s.name)}</option>`).join('');
-      $('wStylist').innerHTML = [config.anyStylist, ...config.stylists.map(s => s.name)].map(n => `<option>${esc(n)}</option>`).join('');
-      $('today').textContent = thDate(new Date());
-      const profile = await liff.getProfile();
-      $('me').textContent = `เข้าสู่ระบบ: ${profile.displayName}`;
-      $('gate').hidden = true; $('app').hidden = false;
-      await loadQueue();
-      setInterval(() => { if (!document.querySelector('[data-page=queue]').hidden) loadQueue().catch(() => {}); }, 15000);
-    } catch (err) {
-      $('gateMsg').innerHTML = `<span class="error">เปิดหน้าไม่สำเร็จ: ${esc(err.message)}</span>`;
+      $('gateMsg').innerHTML = probe.error === 'NOT_ADMIN'
+        ? `บัญชีนี้ยังไม่ได้รับสิทธิ์แอดมิน<br><br>นำ User ID นี้ไปใส่ใน Script Property <code>ADMIN_USER_IDS</code>:<br><br><code>${esc(probe.userId)}</code>`
+        : `<span class="err">${esc(probe.error)}</span>`;
+      return;
     }
-  })();
+    $('me').textContent = 'เข้าสู่ระบบ: ' + (await liff.getProfile()).displayName;
+    $('gate').hidden = true; $('app').hidden = false;
+    await loadDay();
+    setInterval(() => { if (!document.querySelector('[data-page=sched]').hidden && $('drawer').hidden) loadDay().catch(() => {}); }, 30000);
+  } catch (e) { $('gateMsg').innerHTML = `<span class="err">เปิดหน้าไม่สำเร็จ: ${esc(e.message)}</span>`; }
+})();
 </script>
 </body>
 </html>

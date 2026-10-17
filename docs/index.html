@@ -3,322 +3,567 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Million Hair</title>
+<title>Million Hair Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #14294A; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C; --gold: #F4A259;
-    --bg: #F4F6F3; --card: #FCFDFB; --line: #DDE3DF; --text: #14294A; --muted: #4A5568;
+    --paper: #F3F3F1; --card: #FBFBFA; --field: #E9EAEC; --line: #CDD2D9; --ink: #1B2533; --muted: #6E7887;
+    --steel: #5A7FA8; --steel-d: #46698F; --steel-soft: #E4EBF3; --navy: #1E2B3C; --red: #B4423A; --cross: #9AA5B4;
+    --th: 'IBM Plex Sans Thai', Tahoma, sans-serif; --en: 'Barlow Condensed', 'Arial Narrow', sans-serif; --mono: 'IBM Plex Mono', Menlo, monospace;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sarabun', Tahoma, sans-serif; font-size: 17px; }
-  header { background: var(--navy); color: #F4F6F3; padding: 24px 20px 0; }
-  header p { margin: 0; color: var(--gold); font-family: 'Prompt', sans-serif; font-size: 13px; letter-spacing: 3px; }
-  header h1 { margin: 4px 0 2px; font-family: 'Prompt', sans-serif; font-size: 26px; font-weight: 600; }
-  header small { color: #BFD0E0; }
-  nav { display: flex; gap: 4px; overflow-x: auto; margin: 16px -20px 0; padding: 0 16px; scrollbar-width: none; }
-  nav button { flex: none; width: auto; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0;
-    color: #BFD0E0; font: 500 15px 'Prompt', sans-serif; padding: 10px 10px 12px; }
-  nav button.on { color: #F4F6F3; border-bottom-color: var(--gold); }
-  main { padding: 20px 16px 40px; max-width: 480px; margin: 0 auto; }
-  h2 { font-family: 'Prompt', sans-serif; font-size: 20px; margin: 0 0 12px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-  .field { display: block; font-weight: 600; margin: 18px 0 8px; }
-  .field:first-child { margin-top: 0; }
-  .field small { font-weight: 400; color: var(--muted); }
-  input[type=text], input[type=tel], textarea { width: 100%; padding: 12px 14px; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-  textarea { resize: vertical; min-height: 64px; }
-  .choices { display: grid; gap: 8px; }
-  .choices label { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; background: #fff; }
-  .choices input { display: none; }
-  .choices label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
-  .choices b { display: block; }
-  .choices span { color: var(--muted); font-size: 14px; }
-  .choices .price { color: var(--teal); font-weight: 600; white-space: nowrap; }
-  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted); margin: 18px 0; }
-  .consent input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
-  button { width: 100%; padding: 14px; font: 600 18px 'Prompt', sans-serif; border: 0; border-radius: 12px; background: var(--teal); color: #F4F6F3; cursor: pointer; }
-  button.secondary { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); margin-top: 10px; }
-  button:disabled { opacity: .5; }
-  .ticket { text-align: center; }
-  .ticket .label { color: var(--muted); margin: 0; }
-  .ticket .no { font-family: 'Prompt', sans-serif; font-size: 72px; font-weight: 600; color: var(--navy); margin: 4px 0 8px; line-height: 1; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 12px; }
-  .stats div { background: var(--teal-soft); border-radius: 12px; padding: 12px; }
-  .stats b { display: block; font-family: 'Prompt', sans-serif; font-size: 26px; color: var(--teal); }
-  .detail { text-align: left; border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 4px; }
-  .detail p { display: flex; justify-content: space-between; margin: 6px 0; }
-  .detail span { color: var(--muted); }
-  .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--navy); color: #F4F6F3; font-size: 14px; }
-  .pill.near { background: var(--orange); }
-  .note { color: var(--muted); font-size: 15px; }
-  .error { color: var(--orange); font-weight: 600; }
-  .list .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
-  .list .row:last-child { border-bottom: 0; }
-  .list .row span { color: var(--muted); font-size: 14px; display: block; }
-  .list .row .price { color: var(--teal); font-weight: 600; white-space: nowrap; }
-  .stylist { display: flex; gap: 14px; align-items: center; padding: 10px 0; }
-  .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: var(--gold);
-    display: grid; place-items: center; font: 600 22px 'Prompt', sans-serif; flex: none; }
-  .bars { display: grid; gap: 8px; }
-  .bar { display: grid; grid-template-columns: 52px 1fr 64px; gap: 10px; align-items: center; font-size: 15px; }
-  .bar i { display: block; height: 14px; border-radius: 7px; background: var(--teal); min-width: 4px; }
-  .bar.peak i { background: var(--orange); }
-  .bar em { font-style: normal; color: var(--muted); font-size: 13px; text-align: right; }
-  .legend { font-size: 13px; color: var(--muted); margin-top: 12px; }
-  .fake { font-size: 13px; color: var(--muted); text-align: center; margin-top: 24px; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--th); font-size: 15px; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  input, textarea { font: inherit; color: inherit; }
   [hidden] { display: none !important; }
+
+  /* blueprint frame: เครื่องหมาย + ที่มุมทั้ง 4 */
+  .frame { position: relative; }
+  .frame::before { content: ""; position: absolute; inset: -6px; pointer-events: none; --c: var(--cross);
+    background:
+      linear-gradient(var(--c), var(--c)) 0 6px / 13px 1px no-repeat, linear-gradient(var(--c), var(--c)) 6px 0 / 1px 13px no-repeat,
+      linear-gradient(var(--c), var(--c)) 100% 6px / 13px 1px no-repeat, linear-gradient(var(--c), var(--c)) calc(100% - 6px) 0 / 1px 13px no-repeat,
+      linear-gradient(var(--c), var(--c)) 0 calc(100% - 6px) / 13px 1px no-repeat, linear-gradient(var(--c), var(--c)) 6px 100% / 1px 13px no-repeat,
+      linear-gradient(var(--c), var(--c)) 100% calc(100% - 6px) / 13px 1px no-repeat, linear-gradient(var(--c), var(--c)) calc(100% - 6px) 100% / 1px 13px no-repeat; }
+  .hatch { background: repeating-linear-gradient(135deg, #E3E6EA 0 7px, #F1F2F4 7px 14px); }
+
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+  .bar { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; height: 52px; padding: 0 8px;
+    border-bottom: 1px solid var(--line); background: var(--paper); position: sticky; top: 0; z-index: 5; }
+  .bar b { text-align: center; font: 700 16px var(--en); letter-spacing: 1.5px; }
+  .bar button { height: 40px; font-size: 22px; color: var(--ink); }
+  main { flex: 1; padding: 18px 18px 120px; }
+  .step { display: flex; justify-content: space-between; font: 500 11px var(--mono); letter-spacing: 1.5px; color: var(--steel-d); }
+  .progress { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 8px 0 20px; }
+  .progress i { height: 3px; background: var(--line); }
+  .progress i.on { background: var(--steel); }
+  h1 { font-size: 27px; font-weight: 700; margin: 0 0 6px; letter-spacing: -.3px; }
+  .lead { color: var(--muted); font-size: 13px; margin: 0 0 16px; line-height: 1.5; }
+  .label { font: 500 11px var(--mono); letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+  .eyebrow { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 10px; }
+
+  .seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); background: var(--card); }
+  .seg button { padding: 10px 6px; border-left: 1px solid var(--line); text-align: left; display: flex; gap: 8px; align-items: center; font-size: 13px; }
+  .seg button:first-child { border-left: 0; }
+  .seg button small { display: block; font: 500 10px var(--mono); color: var(--muted); }
+  .seg button.on { background: var(--steel); color: #fff; }
+  .seg button.on small { color: #DCE6F2; }
+  .seg .len { width: 3px; background: currentColor; opacity: .55; align-self: center; }
+  .seg.center button { justify-content: center; }
+
+  .svc { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center; padding: 14px 2px; border-bottom: 1px solid var(--line); width: 100%; text-align: left; }
+  .box { width: 20px; height: 20px; border: 1.5px solid var(--cross); display: grid; place-items: center; }
+  .on > .box, .svc.on .box { background: var(--steel); border-color: var(--steel); }
+  .box::after { content: ""; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
+  .svc.on .box::after { opacity: 1; }
+  .svc b { font-weight: 600; font-size: 16px; }
+  .svc small { display: block; font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
+  .svc .price { font: 700 18px var(--en); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .sty { border: 1px solid var(--line); background: var(--card); text-align: left; }
+  .sty .pic { aspect-ratio: 1 / .78; display: grid; place-items: center; font: 500 10px var(--mono); color: var(--muted); letter-spacing: 2px; }
+  .sty .meta { padding: 10px 12px 12px; position: relative; }
+  .sty b { font: 700 19px var(--en); letter-spacing: .5px; }
+  .sty small { display: block; color: var(--muted); font-size: 12px; }
+  .sty.on { border-color: var(--steel); box-shadow: 0 0 0 1.5px var(--steel); }
+  .sty.on .meta { background: var(--steel-soft); }
+  .sty.on .meta::after { content: "+ SEL"; position: absolute; right: 10px; top: 12px; font: 500 10px var(--mono); color: var(--steel-d); }
+
+  .days { display: grid; grid-auto-flow: column; grid-auto-columns: 52px; gap: 6px; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: none; }
+  .day { border: 1px solid var(--line); background: var(--card); padding: 6px 0 8px; text-align: center; }
+  .day small { display: block; font: 500 10px var(--mono); color: var(--muted); }
+  .day b { font: 700 22px var(--en); }
+  .day.on { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .day.on small { color: #DCE6F2; }
+  .day:disabled { opacity: .45; cursor: default; }
+  .times { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .time { border: 1px solid var(--line); background: var(--card); padding: 11px 0; font: 600 17px var(--en); letter-spacing: .5px; }
+  .time.on { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .time:disabled { color: #A0A8B4; text-decoration: line-through; cursor: default; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 11px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border: 1px solid var(--line); background: var(--card); margin-right: 5px; vertical-align: -1px; }
+  .legend i.full { background: #D4D8DE; }
+
+  .field-l { display: block; font-size: 13px; color: var(--muted); margin: 16px 0 6px; }
+  .field-l em { font-style: normal; color: #A0A8B4; }
+  .in { width: 100%; padding: 12px; border: 1px solid var(--line); background: var(--field); outline: none; }
+  .in:focus { border-color: var(--steel); background: #fff; }
+  textarea.in { resize: vertical; min-height: 70px; }
+  .photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .photo { aspect-ratio: 1; display: grid; place-items: center; font: 500 9px var(--mono); color: var(--muted); letter-spacing: 1px; position: relative; overflow: hidden; }
+  .photo img { width: 100%; height: 100%; object-fit: cover; }
+  .photo button { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(27, 37, 51, .75); color: #fff; font-size: 13px; }
+  .add { border: 1.5px dashed var(--steel); color: var(--steel-d); font-size: 12px; text-align: center; background: transparent; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { border: 1px solid var(--line); background: var(--card); padding: 7px 14px; font-size: 13px; }
+  .chip.on { border-color: var(--steel); color: var(--steel-d); background: var(--steel-soft); }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--muted); margin-top: 18px; line-height: 1.5; text-align: left; }
+
+  .sum { border: 1px solid var(--line); background: var(--card); }
+  .sum .r { padding: 12px 14px; border-top: 1px solid var(--line); }
+  .sum .r:first-child { border-top: 0; }
+  .sum .two { display: grid; grid-template-columns: 1fr 1fr; padding: 0; }
+  .sum .two > div { padding: 12px 14px; }
+  .sum .two > div + div { border-left: 1px solid var(--line); }
+  .sum big { display: block; font-size: 19px; font-weight: 700; margin-top: 2px; }
+  .sum .line { display: flex; justify-content: space-between; font-size: 14px; margin-top: 6px; }
+  .sum .total { display: flex; justify-content: space-between; align-items: baseline; }
+  .sum .total b { font: 700 26px var(--en); }
+  .link { color: var(--steel-d); font-size: 13px; }
+  .deposit { background: var(--navy); color: #E6ECF3; padding: 16px; margin-top: 16px; }
+  .deposit .head { display: flex; justify-content: space-between; align-items: baseline; }
+  .deposit .head b { font: 700 19px var(--en); letter-spacing: 1px; }
+  .deposit .head big { font: 700 28px var(--en); color: #fff; }
+  .deposit .body { display: grid; grid-template-columns: 112px 1fr; gap: 14px; margin-top: 12px; font-size: 12.5px; line-height: 1.55; color: #BFCADA; }
+  .qr { width: 112px; height: 112px; background: #fff; display: grid; place-items: center; font: 500 9px var(--mono); color: var(--muted); text-align: center; }
+  .qr svg { width: 104px; height: 104px; }
+  .slip { width: 100%; margin-top: 12px; border: 1.5px dashed #6F86A3; color: #DCE6F2; padding: 10px; font-size: 13px; }
+
+  .foot { position: fixed; left: 0; right: 0; bottom: 0; background: var(--paper); border-top: 1px solid var(--line); z-index: 6; }
+  .foot .in-foot { max-width: 480px; margin: 0 auto; display: flex; align-items: center; gap: 14px; padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); }
+  .foot .info { flex: 1; min-width: 0; }
+  .foot .info small { display: block; font-size: 11px; color: var(--muted); }
+  .foot .info b { font: 700 22px var(--en); }
+  .cta { background: var(--steel); color: #fff; padding: 12px 22px; text-align: center; font-weight: 700; line-height: 1.15; min-width: 128px; }
+  .cta small { display: block; font: 600 12px var(--en); letter-spacing: 2px; opacity: .85; }
+  .cta.wide { flex: 1; font-size: 15px; }
+  .cta:disabled { background: #A9B5C4; cursor: default; }
+  .err { color: var(--red); font-size: 13px; margin-top: 10px; }
+
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); margin-bottom: 16px; }
+  .tabs button { padding: 10px; font-size: 14px; background: var(--card); }
+  .tabs button.on { background: var(--steel); color: #fff; }
+  .bk { display: grid; grid-template-columns: 76px 1fr; border: 1px solid var(--line); background: var(--card); margin-bottom: 16px; }
+  .bk .cal { background: var(--navy); color: #fff; text-align: center; padding: 12px 0; }
+  .bk .cal small { display: block; font: 600 12px var(--en); letter-spacing: 2px; color: #9DB7D5; }
+  .bk .cal b { font: 700 38px var(--en); line-height: 1; }
+  .bk .info { padding: 12px 14px; }
+  .bk .info .st { font: 500 10.5px var(--mono); color: var(--steel-d); letter-spacing: 1px; }
+  .bk .info big { display: block; font: 700 24px var(--en); margin: 2px 0; }
+  .bk .info small { color: var(--muted); font-size: 12.5px; }
+  .bk .acts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); }
+  .bk .acts button { padding: 11px 4px; font-size: 13px; border-left: 1px solid var(--line); }
+  .bk .acts button:first-child { border-left: 0; }
+  .bk .acts .danger { color: var(--red); }
+  .past { display: grid; grid-template-columns: 44px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .past .d { text-align: center; } .past .d b { display: block; font: 700 24px var(--en); line-height: 1; } .past .d small { font: 500 10px var(--mono); color: var(--muted); }
+  .past small { color: var(--muted); font-size: 12px; }
+  .shopline { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; margin-top: 20px; }
+  .empty { text-align: center; color: var(--muted); padding: 28px 0; border: 1px dashed var(--line); }
+
+  .ptable { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .ptable th, .ptable td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+  .ptable th:first-child, .ptable td:first-child { text-align: left; }
+  .ptable th { font: 500 11px var(--mono); color: var(--muted); letter-spacing: 1px; }
+  .ptable td small { display: block; font: 500 10px var(--mono); color: var(--muted); }
+  .look { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .look .pic { aspect-ratio: 3 / 4; display: grid; place-items: end start; padding: 10px; border: 1px solid var(--line); }
+  .look b { font: 700 17px var(--en); } .look small { display: block; font-size: 11px; color: var(--muted); }
+  .kv { border: 1px solid var(--line); background: var(--card); }
+  .kv div { padding: 12px 14px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.55; }
+  .kv div:first-child { border-top: 0; }
+  .note { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 22px; }
+  .done { text-align: center; padding-top: 24px; }
+  .done .tick { width: 72px; height: 72px; margin: 0 auto 16px; background: var(--steel); color: #fff; display: grid; place-items: center; font-size: 36px; }
+  .loading { text-align: center; color: var(--muted); padding: 60px 0; font: 500 12px var(--mono); letter-spacing: 2px; }
 </style>
 </head>
 <body>
-<header>
-  <p>MILLION HAIR</p>
-  <h1 id="shopName">Million Hair</h1>
-  <small id="tagline">หนึ่งในล้าน ไม่ต้องรอ</small>
-  <nav id="nav">
-    <button data-page="queue" class="on">ลงคิว</button>
-    <button data-page="services">บริการ & ราคา</button>
-    <button data-page="team">ทีมช่าง</button>
-    <button data-page="busy">ช่วงคนน้อย</button>
-    <button data-page="about">ข้อมูลร้าน</button>
-  </nav>
-</header>
-<main>
-  <div id="loading" class="card note">กำลังโหลด…</div>
-  <p id="fatal" class="card error" hidden></p>
+<div class="app">
+  <div class="bar">
+    <button id="back" aria-label="ย้อนกลับ">‹</button>
+    <b>MILLION HAIR STUDIO</b>
+    <button id="close" aria-label="ปิด">×</button>
+  </div>
+  <main id="view"><div class="loading">LOADING…</div></main>
+</div>
+<div class="foot" id="foot" hidden><div class="in-foot" id="footInner"></div></div>
+<input type="file" id="filePick" accept="image/*" hidden>
 
-  <!-- ลงคิว -->
-  <section data-view="queue" hidden>
-    <form id="form" class="card" hidden>
-      <h2>ลงคิวออนไลน์</h2>
-      <label class="field" for="name">ชื่อที่ให้ร้านเรียก</label>
-      <input id="name" type="text" maxlength="50" required autocomplete="nickname">
-
-      <label class="field" for="phone">เบอร์โทร <small>(ไม่บังคับ ใช้ติดต่อเมื่อเรียกคิวแล้วไม่พบ)</small></label>
-      <input id="phone" type="tel" inputmode="numeric" maxlength="12" placeholder="08xxxxxxxx" autocomplete="tel">
-
-      <p class="field">เลือกบริการ</p>
-      <div class="choices" id="serviceChoices"></div>
-
-      <p class="field">ช่างที่ต้องการ</p>
-      <div class="choices" id="stylistChoices"></div>
-
-      <label class="field" for="note">หมายเหตุถึงช่าง <small>(ไม่บังคับ)</small></label>
-      <textarea id="note" maxlength="200" placeholder="เช่น ผมยาวมาก, หนังศีรษะแพ้ง่าย, อยากได้ทรงตามรูป"></textarea>
-
-      <label class="consent">
-        <input id="consent" type="checkbox">
-        <span>ยินยอมให้ร้านเก็บชื่อ เบอร์โทร และ LINE User ID เพื่อใช้จัดคิวและแจ้งเตือนเท่านั้น</span>
-      </label>
-      <p id="formError" class="error" hidden></p>
-      <button id="submit" type="submit">ยืนยันลงคิว</button>
-    </form>
-
-    <div id="ticket" class="card ticket" hidden>
-      <p class="label" id="tGreet">คิวของคุณ</p>
-      <p class="no" id="tNo">–</p>
-      <p><span class="pill" id="tStatus">รอคิว</span></p>
-      <div class="stats">
-        <div><b id="tAhead">–</b>คิวก่อนหน้า</div>
-        <div><b id="tWait">–</b>นาทีโดยประมาณ</div>
-      </div>
-      <div class="detail">
-        <p><span>บริการ</span><b id="tService">–</b></p>
-        <p><span>ช่าง</span><b id="tStylist">–</b></p>
-        <p><span>ราคาโดยประมาณ</span><b id="tPrice">–</b></p>
-      </div>
-      <p class="note" id="tNote"></p>
-      <button class="secondary" id="refresh" type="button">อัปเดตสถานะ</button>
-    </div>
-  </section>
-
-  <!-- บริการ -->
-  <section data-view="services" hidden>
-    <div class="card">
-      <h2>บริการ & ราคา</h2>
-      <div class="list" id="serviceList"></div>
-      <p class="legend">ราคาอาจเปลี่ยนตามความยาวและปริมาณผม ช่างจะแจ้งก่อนเริ่มบริการ</p>
-    </div>
-  </section>
-
-  <!-- ทีมช่าง -->
-  <section data-view="team" hidden>
-    <div class="card">
-      <h2>ทีมช่าง</h2>
-      <div id="teamList"></div>
-    </div>
-  </section>
-
-  <!-- ช่วงคนน้อย -->
-  <section data-view="busy" hidden>
-    <div class="card">
-      <h2>ช่วงเวลาที่คนน้อย</h2>
-      <p class="note" id="busyNote">กำลังโหลด…</p>
-      <div class="bars" id="busyBars"></div>
-      <p class="legend">คำนวณจากจำนวนคิวจริงย้อนหลัง 28 วัน · สีส้ม = ช่วงคนแน่น</p>
-    </div>
-  </section>
-
-  <!-- ข้อมูลร้าน -->
-  <section data-view="about" hidden>
-    <div class="card list">
-      <h2>ข้อมูลร้าน</h2>
-      <div class="row"><div><b>เวลาทำการ</b><span id="aHours"></span></div></div>
-      <div class="row"><div><b>ที่ตั้ง</b><span id="aAddress"></span></div></div>
-      <div class="row"><div><b>โทร</b><span id="aPhone"></span></div></div>
-      <div class="row"><div><b>ลงคิวอย่างไร</b><span>กดลงคิวผ่าน LINE แล้วไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความแจ้ง กรุณากลับมาภายใน 10 นาที</span></div></div>
-    </div>
-  </section>
-
-  <p class="fake">ร้านสมมติสำหรับโครงงาน Digital Transformation</p>
-</main>
-
+<script src="vendor/qrcode-2.0.4.js"></script>
 <script src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script>
 <script>
-  const LIFF_ID = '2012052973-UNW6H5DF';
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
+const LIFF_ID = '2012052973-UNW6H5DF';
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
 
-  const $ = id => document.getElementById(id);
-  const show = (el, on = true) => { (typeof el === 'string' ? $(el) : el).hidden = !on; };
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  let config = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const baht = n => '฿' + Number(n).toLocaleString('en-US');
+const TH_DAY = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const EN_DAY = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+const EN_MON = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+const parseYmd = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const thDate = s => { const d = parseYmd(s); return `${TH_DAY[d.getDay()]}. ${d.getDate()} ${TH_MON[d.getMonth()]}`; };
 
-  async function getJSON(action) {
-    const res = await fetch(`${GAS_URL}?action=${action}`);
-    return res.json();
-  }
+let C = null;          // config จาก backend
+let profile = null;
+let draft = null;      // ข้อมูลการจองที่กำลังกรอก
+let page = 'book', step = 1, my = null, myTab = 'up';
 
-  async function api(payload) {
-    const res = await fetch(GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ไม่ทำให้เกิด CORS preflight
-      body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }),
-    });
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'เกิดข้อผิดพลาด');
-    return data;
-  }
+const newDraft = () => ({ length: 'M', services: [], stylist: 'any', date: null, time: null,
+  name: '', phone: '', pronoun: 'ไม่ระบุ', chemicals: [], note: '', photos: [], slip: null, consent: false, reschedule: null });
 
-  // ---------- navigation ----------
-  const loaded = {};
-  function go(page) {
-    if (!document.querySelector(`[data-view="${page}"]`)) page = 'queue';
-    document.querySelectorAll('[data-view]').forEach(v => show(v, v.dataset.view === page));
-    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
-    if (page === 'busy' && !loaded.busy) { loaded.busy = true; loadBusy(); }
-  }
-  $('nav').addEventListener('click', e => { if (e.target.dataset.page) go(e.target.dataset.page); });
+async function api(payload) {
+  const res = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }) });
+  const d = await res.json();
+  if (!d.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+  return d;
+}
 
-  // ---------- static pages from config ----------
-  function renderConfig() {
-    const { shop, services, stylists, anyStylist } = config;
-    $('shopName').textContent = shop.name;
-    $('tagline').textContent = shop.tagline;
-    $('serviceList').innerHTML = services.map(s =>
-      `<div class="row"><div><b>${esc(s.name)}</b><span>ประมาณ ${s.min} นาที</span></div><div class="price">฿${esc(s.price)}</div></div>`).join('');
-    $('teamList').innerHTML = stylists.map(s =>
-      `<div class="stylist"><div class="avatar">${esc(s.name.replace('ช่าง', '').slice(0, 1))}</div><div><b>${esc(s.name)}</b><br><span class="note">${esc(s.skill)}</span></div></div>`).join('');
-    $('aHours').textContent = shop.hours;
-    $('aAddress').textContent = shop.address;
-    $('aPhone').textContent = shop.phone;
+const svcById = id => C.services.find(s => s.id === id);
+const priceOf = (s, len) => { const m = C.lengths.find(l => l.code === len).mult; return s.chem ? Math.round(s.price * m / 100) * 100 : s.price; };
+const quote = () => {
+  const svcs = draft.services.map(svcById);
+  return { svcs, minutes: svcs.reduce((a, s) => a + s.min, 0), price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
+};
+const stylistName = id => id === 'any' ? 'ใครก็ได้' : (C.stylists.find(s => s.id === id) || {}).name;
 
-    $('serviceChoices').innerHTML = services.map((s, i) =>
-      `<label><input type="radio" name="service" value="${esc(s.name)}" ${i === 0 ? 'checked' : ''}>
-       <div><b>${esc(s.name)}</b><span>~${s.min} นาที</span></div><div class="price">฿${esc(s.price)}</div></label>`).join('');
-    $('stylistChoices').innerHTML = [{ name: anyStylist, skill: 'ช่างคนแรกที่ว่าง' }, ...stylists].map((s, i) =>
-      `<label><input type="radio" name="stylist" value="${esc(s.name)}" ${i === 0 ? 'checked' : ''}>
-       <div><b>${esc(s.name)}</b><span>${esc(s.skill)}</span></div></label>`).join('');
-  }
+// ---------- rendering helpers ----------
+function header(n, label) {
+  return `<div class="step"><span>STEP ${String(n).padStart(2, '0')} / 05</span><span>${label}</span></div>
+    <div class="progress">${[1, 2, 3, 4, 5].map(i => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div>`;
+}
+function foot(info, cta, onClick, disabled) {
+  if (!cta) { $('foot').hidden = true; return; }
+  $('foot').hidden = false;
+  $('footInner').innerHTML = `${info ? `<div class="info">${info}</div>` : ''}
+    <button class="cta frame ${info ? '' : 'wide'}" id="cta" ${disabled ? 'disabled' : ''}>${cta}</button>`;
+  $('cta').onclick = onClick;
+}
+const ctaLabel = (th, en) => `${th}<small>${en}</small>`;
 
-  async function loadBusy() {
-    try {
-      const d = await getJSON('busy');
-      if (!d.days) { $('busyNote').textContent = 'ยังมีข้อมูลไม่พอ ระบบจะแสดงเมื่อมีคิวสะสมแล้ว'; return; }
-      const max = Math.max(...d.hours.map(h => h.avg), 0.01);
-      const sorted = [...d.hours].sort((a, b) => b.avg - a.avg);
-      const peak = new Set(sorted.slice(0, 3).filter(h => h.avg > 0).map(h => h.hour));
-      const quiet = [...d.hours].sort((a, b) => a.avg - b.avg)[0];
-      $('busyNote').textContent = `แนะนำช่วง ${quiet.hour}:00–${quiet.hour + 1}:00 น. คนน้อยที่สุด (ข้อมูล ${d.days} วัน)`;
-      $('busyBars').innerHTML = d.hours.map(h =>
-        `<div class="bar ${peak.has(h.hour) ? 'peak' : ''}"><span>${h.hour}:00</span><i style="width:${(h.avg / max) * 100}%"></i><em>${h.avg.toFixed(1)} คิว${peak.has(h.hour) ? ' · แน่น' : ''}</em></div>`).join('');
-    } catch (e) {
-      $('busyNote').textContent = 'โหลดข้อมูลไม่สำเร็จ';
-    }
-  }
+function render() {
+  window.scrollTo(0, 0);
+  ({ book: renderBook, done: renderDone, my: renderMy, price: renderPrice, stylists: renderStylists,
+     lookbook: renderLookbook, about: renderAbout }[page] || renderBook)();
+}
+function go(p, s) { page = p; if (s) step = s; render(); }
 
-  // ---------- queue ----------
-  function renderTicket(s) {
-    show('form', false); show('ticket');
-    $('tGreet').textContent = s.visitNo > 1 ? `ยินดีต้อนรับกลับ คุณ${s.name} · ครั้งที่ ${s.visitNo}` : `คิวของคุณ${s.name}`;
-    $('tNo').textContent = s.queueNo;
-    $('tStatus').textContent = s.status;
-    $('tStatus').className = 'pill' + (s.status === 'ใกล้ถึงคิว' ? ' near' : '');
-    $('tAhead').textContent = s.ahead;
-    $('tWait').textContent = s.waitMin;
-    $('tService').textContent = s.service;
-    $('tStylist').textContent = s.stylist || '–';
-    $('tPrice').textContent = s.price ? `฿${s.price}` : '–';
-    $('tNote').textContent = s.status === 'ใกล้ถึงคิว'
-      ? 'ใกล้ถึงคิวแล้ว กรุณากลับมาที่ร้านภายใน 10 นาที'
-      : s.status === 'รับบริการ' ? 'กำลังให้บริการ ขอบคุณที่ใช้บริการค่ะ'
-      : 'ไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความไปทาง LINE';
-  }
+// ---------- STEP 1: services ----------
+function renderBook() {
+  if (step === 1) return stepService();
+  if (step === 2) return stepStylist();
+  if (step === 3) return stepDate();
+  if (step === 4) return stepDetails();
+  return stepReview();
+}
 
-  async function refresh() {
-    const s = await api({ action: 'status' });
-    if (s.inQueue) renderTicket(s);
-    else { show('ticket', false); show('form'); }
-  }
-
-  $('form').addEventListener('submit', async ev => {
-    ev.preventDefault();
-    show('formError', false);
-    if (!$('consent').checked) { $('formError').textContent = 'กรุณากดยินยอมก่อนลงคิว'; show('formError'); return; }
-    $('submit').disabled = true;
-    try {
-      renderTicket(await api({
-        action: 'join',
-        name: $('name').value,
-        phone: $('phone').value,
-        service: document.querySelector('input[name=service]:checked').value,
-        stylist: document.querySelector('input[name=stylist]:checked').value,
-        note: $('note').value,
-        consent: true,
-      }));
-    } catch (err) {
-      $('formError').textContent = err.message; show('formError');
-    } finally {
-      $('submit').disabled = false;
-    }
+function stepService() {
+  const q = quote();
+  $('view').innerHTML = `${header(1, 'SERVICE')}
+    <h1>วันนี้ทำอะไรดี?</h1>
+    <p class="lead">ผมคุณยาวแค่ไหน? ราคางานเคมีคิดตามความยาวผม (มาตรฐานสากล) ไม่แบ่งราคาตามเพศ</p>
+    <div class="seg">${C.lengths.map((l, i) => `<button data-len="${l.code}" class="${draft.length === l.code ? 'on' : ''}">
+      <span class="len" style="height:${10 + i * 7}px"></span><span>${l.th}<small>${l.code}</small></span></button>`).join('')}</div>
+    <div style="margin-top:8px">${C.services.map(s => `<button class="svc ${draft.services.includes(s.id) ? 'on' : ''}" data-svc="${s.id}">
+      <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${s.min} MIN</small></span>
+      <span class="price">${baht(priceOf(s, draft.length))}</span></button>`).join('')}</div>`;
+  $('view').querySelectorAll('[data-len]').forEach(b => b.onclick = () => { draft.length = b.dataset.len; stepService(); });
+  $('view').querySelectorAll('[data-svc]').forEach(b => b.onclick = () => {
+    const id = b.dataset.svc;
+    draft.services = draft.services.includes(id) ? draft.services.filter(x => x !== id) : [...draft.services, id];
+    draft.time = null;
+    stepService();
   });
-  $('refresh').addEventListener('click', () => refresh().catch(e => alert(e.message)));
+  foot(`<small>${q.svcs.length} บริการ · ${q.minutes} นาที</small><b>${baht(q.price)}</b>`, ctaLabel('ถัดไป', 'NEXT'),
+    () => go('book', 2), !q.svcs.length);
+}
 
-  (async () => {
-    try {
-      const configP = getJSON('config');
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
-      config = await configP;
-      renderConfig();
-      go(new URLSearchParams(location.search).get('page') || 'queue');
-      const profile = await liff.getProfile();
-      $('name').value = profile.displayName || '';
-      await refresh();
-      show('loading', false);
-      setInterval(() => { if (!$('ticket').hidden) refresh().catch(() => {}); }, 30000);
-    } catch (err) {
-      // เปิดนอกแอป LINE แล้ว ID token เก่าหมดอายุ: ล็อกอินใหม่ 1 ครั้ง
-      if (!liff.isInClient() && /หมดอายุ/.test(err.message) && !sessionStorage.getItem('relogin')) {
-        sessionStorage.setItem('relogin', '1');
-        liff.logout(); liff.login({ redirectUri: location.href }); return;
-      }
-      show('loading', false);
-      $('fatal').textContent = 'เปิดหน้าไม่สำเร็จ: ' + err.message;
-      show('fatal');
+// ---------- STEP 2: stylist ----------
+function stepStylist() {
+  const all = [{ id: 'any', name: 'Any', role: 'ใครก็ได้ · จัดช่างที่ว่างให้' }, ...C.stylists];
+  $('view').innerHTML = `${header(2, 'STYLIST')}
+    <h1>เลือกช่างของคุณ</h1>
+    <p class="lead">ไม่มีช่างประจำ? เลือก Any แล้วระบบจะจัดช่างที่ว่างในเวลาที่คุณเลือกให้</p>
+    <div class="grid2">${all.map(s => `<button class="sty frame ${draft.stylist === s.id ? 'on' : ''}" data-sty="${s.id}">
+      <div class="pic hatch">${s.id === 'any' ? '+ ANY' : 'PORTRAIT'}</div>
+      <div class="meta"><b>${esc(s.name)}</b><small>${esc(s.role)}</small></div></button>`).join('')}</div>`;
+  $('view').querySelectorAll('[data-sty]').forEach(b => b.onclick = () => { draft.stylist = b.dataset.sty; draft.time = null; stepStylist(); });
+  foot('', ctaLabel(`เลือก ${esc(stylistName(draft.stylist))}`, 'NEXT'), () => go('book', 3));
+}
+
+// ---------- STEP 3: date & time ----------
+async function stepDate() {
+  const q = quote();
+  const minutes = draft.reschedule ? draft.reschedule.duration : q.minutes;
+  const open = C.dates.filter(d => !d.closed);
+  if (!draft.date || !C.dates.some(d => d.date === draft.date && !d.closed)) draft.date = open[0] && open[0].date;
+  const d0 = parseYmd(draft.date);
+  $('view').innerHTML = `${header(3, 'DATE & TIME')}
+    <h1>${draft.reschedule ? 'เลื่อนไปวันไหนดี?' : 'มาวันไหนดี?'}</h1>
+    <div class="eyebrow"><b style="font:700 17px var(--en);letter-spacing:1px">${EN_MON[d0.getMonth()]} ${d0.getFullYear()}</b><span class="lead" style="margin:0">ปิดทุกวันพุธ</span></div>
+    <div class="days">${C.dates.map(d => { const x = parseYmd(d.date);
+      return `<button class="day ${d.date === draft.date ? 'on' : ''}" data-date="${d.date}" ${d.closed ? 'disabled' : ''}>
+        <small>${TH_DAY[x.getDay()]}</small><b>${x.getDate()}</b></button>`; }).join('')}</div>
+    <div class="eyebrow"><span class="label">เวลาว่างกับ ${esc(stylistName(draft.stylist))}</span><span class="label">${minutes} MIN</span></div>
+    <div id="times" class="times"><div class="loading" style="grid-column:1/-1;padding:20px">CHECKING…</div></div>
+    <div class="legend"><span><i></i>ว่าง</span><span><i class="full"></i>เต็ม</span></div>`;
+  $('view').querySelectorAll('[data-date]').forEach(b => b.onclick = () => { draft.date = b.dataset.date; draft.time = null; stepDate(); });
+  const footFor = () => foot(`<small>${draft.date ? thDate(draft.date) : ''}</small><b>${draft.time ? draft.time + ' น.' : 'เลือกเวลา'}</b>`,
+    ctaLabel('ถัดไป', 'NEXT'), () => go('book', draft.reschedule ? 5 : 4), !draft.time);
+  footFor();
+  const forDate = draft.date;
+  try {
+    const r = await api({ action: 'slots', date: forDate, minutes, stylist: draft.stylist, excludeId: draft.reschedule && draft.reschedule.id });
+    if (forDate !== draft.date || page !== 'book' || step !== 3) return;
+    const free = r.slots.filter(s => s.free);
+    $('times').innerHTML = r.slots.length ? r.slots.map(s => `<button class="time ${s.time === draft.time ? 'on' : ''}" data-time="${s.time}" ${s.free ? '' : 'disabled'}>${s.time}</button>`).join('')
+      : '<div class="empty" style="grid-column:1/-1">วันนี้ร้านปิด</div>';
+    if (r.slots.length && !free.length) $('times').insertAdjacentHTML('afterend', '<p class="err">วันนี้เต็มแล้ว ลองเลือกวันอื่นหรือเลือกช่าง Any</p>');
+    $('times').querySelectorAll('[data-time]').forEach(b => b.onclick = () => {
+      draft.time = b.dataset.time;
+      $('times').querySelectorAll('.time').forEach(x => x.classList.toggle('on', x === b));
+      footFor();
+    });
+  } catch (e) { $('times').innerHTML = `<p class="err" style="grid-column:1/-1">${esc(e.message)}</p>`; }
+}
+
+// ---------- STEP 4: details ----------
+function stepDetails() {
+  $('view').innerHTML = `${header(4, 'DETAILS')}
+    <h1>เล่าให้ช่างฟังหน่อย</h1>
+    <label class="field-l" for="fName">ชื่อเล่น / Name *</label>
+    <input class="in" id="fName" maxlength="50" value="${esc(draft.name)}" autocomplete="nickname">
+    <label class="field-l" for="fPhone">เบอร์โทร / Phone *</label>
+    <input class="in" id="fPhone" type="tel" inputmode="numeric" maxlength="12" placeholder="08x xxx xxxx" value="${esc(draft.phone)}" autocomplete="tel">
+    <span class="field-l">สรรพนามที่อยากให้เรียก <em>(ไม่บังคับ)</em></span>
+    <div class="seg center">${C.pronouns.map(p => `<button data-pro="${esc(p)}" class="${draft.pronoun === p ? 'on' : ''}">${esc(p)}</button>`).join('')}</div>
+    <span class="field-l">ทรงที่อยากได้ / Reference photos <em>(ไม่บังคับ สูงสุด 3 รูป)</em></span>
+    <div class="photos">${draft.photos.map((p, i) => `<div class="photo"><img src="${p}" alt="รูปอ้างอิง ${i + 1}"><button data-rm="${i}" aria-label="ลบรูป">×</button></div>`).join('')}
+      ${[...Array(Math.max(0, 2 - draft.photos.length))].map((_, i) => `<div class="photo hatch">REF ${String(draft.photos.length + i + 1).padStart(2, '0')}</div>`).join('')}
+      ${draft.photos.length < 3 ? '<button class="photo add" id="addPhoto">⇪<br>เพิ่มรูป</button>' : ''}</div>
+    <span class="field-l">เคยทำเคมีใน 12 เดือนที่ผ่านมา <em>(เลือกได้หลายข้อ)</em></span>
+    <div class="chips">${C.chemicals.map(c => `<button class="chip ${draft.chemicals.includes(c) ? 'on' : ''}" data-chem="${esc(c)}">${esc(c)}</button>`).join('')}</div>
+    <label class="field-l" for="fNote">หมายเหตุถึงช่าง <em>(ไม่บังคับ)</em></label>
+    <textarea class="in" id="fNote" maxlength="300" placeholder="เช่น หนังศีรษะแพ้ง่าย อยากได้ทรงที่ดูแลง่าย">${esc(draft.note)}</textarea>
+    <label class="consent"><input type="checkbox" id="fConsent" ${draft.consent ? 'checked' : ''}>
+      <span>ยินยอมให้ร้านเก็บชื่อ เบอร์โทร รูปอ้างอิง และ LINE User ID เพื่อใช้จัดการนัดหมายเท่านั้น (PDPA)</span></label>
+    <p class="err" id="fErr" hidden></p>`;
+  const sync = () => { draft.name = $('fName').value; draft.phone = $('fPhone').value; draft.note = $('fNote').value; draft.consent = $('fConsent').checked; };
+  $('view').querySelectorAll('[data-pro]').forEach(b => b.onclick = () => { sync(); draft.pronoun = b.dataset.pro; stepDetails(); });
+  $('view').querySelectorAll('[data-chem]').forEach(b => b.onclick = () => { sync(); const c = b.dataset.chem;
+    draft.chemicals = draft.chemicals.includes(c) ? draft.chemicals.filter(x => x !== c) : [...draft.chemicals, c]; stepDetails(); });
+  $('view').querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { sync(); draft.photos.splice(Number(b.dataset.rm), 1); stepDetails(); });
+  if ($('addPhoto')) $('addPhoto').onclick = () => { sync(); pickImage(img => { draft.photos.push(img); stepDetails(); }); };
+  foot('', ctaLabel('ตรวจสอบการจอง', 'REVIEW'), () => {
+    sync();
+    const err = !draft.name.trim() ? 'กรุณากรอกชื่อเล่น' : !/^0\d{8,9}$/.test(draft.phone.replace(/\D/g, '')) ? 'กรุณากรอกเบอร์โทรให้ถูกต้อง'
+      : !draft.consent ? 'กรุณากดยินยอมการเก็บข้อมูล' : '';
+    if (err) { $('fErr').textContent = err; $('fErr').hidden = false; return; }
+    go('book', 5);
+  });
+}
+
+// ---------- STEP 5: review & deposit ----------
+function stepReview() {
+  const q = quote();
+  const r = draft.reschedule;
+  const services = r ? `<div class="line"><span>${esc(r.services)}</span><span>${baht(r.price)}</span></div>`
+    : q.svcs.map(s => `<div class="line"><span>${esc(s.th)} · <span style="color:var(--muted)">${esc(s.en.toLowerCase())}</span></span><span>${baht(priceOf(s, draft.length))}</span></div>`).join('');
+  const qrHtml = C.promptpay ? qrSvg(C.promptpay) : '<div class="hatch" style="width:100%;height:100%;display:grid;place-items:center">PROMPTPAY QR<br>· DEMO ·</div>';
+  $('view').innerHTML = `${header(5, 'REVIEW')}
+    <h1>${r ? 'ยืนยันการเลื่อนนัด' : 'เช็กก่อนยืนยัน'}</h1>
+    <div class="sum frame" style="margin-top:14px">
+      <div class="r two"><div><span class="label">Date</span><big>${thDate(draft.date)}</big></div>
+        <div><span class="label">Time</span><big>${draft.time} น.</big></div></div>
+      <div class="r" style="display:flex;justify-content:space-between"><div><span class="label">Stylist</span><big>${esc(r ? r.stylist : stylistName(draft.stylist))}</big></div>
+        <button class="link" id="editSty">${r ? '' : 'แก้ไข'}</button></div>
+      <div class="r"><span class="label">Services</span>${services}</div>
+      <div class="r total"><span>ราคาประเมิน</span><b>${baht(r ? r.price : q.price)}</b></div>
+    </div>
+    ${r ? '<p class="lead" style="margin-top:14px">มัดจำเดิมยังใช้ได้ เลื่อนนัดฟรีเมื่อเลื่อนก่อนเวลานัดเกิน 24 ชม.</p>' : `
+    <div class="deposit">
+      <div class="head"><b>DEPOSIT · มัดจำ</b><big>${baht(C.shop.deposit)}</big></div>
+      <div class="body"><div class="qr">${qrHtml}</div>
+        <div>${C.promptpay ? 'สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป' : '<b style="color:#fff">โหมดสาธิต ไม่ต้องโอนจริง</b><br>ร้านจริงจะให้สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป'}
+          · หักออกจากค่าบริการวันจริง · เลื่อนนัดฟรีก่อน 24 ชม.</div></div>
+      <button class="slip" id="slipBtn">${draft.slip ? '✓ แนบสลิปแล้ว (แตะเพื่อเปลี่ยน)' : '⇪ แนบสลิปโอน / Upload slip' + (C.promptpay ? '' : ' (ไม่บังคับ)')}</button>
+    </div>`}
+    <p class="lead" style="margin-top:14px">ราคาเป็นราคาประเมิน ช่างจะยืนยันราคาจริงหลังดูสภาพผมก่อนเริ่มงาน</p>
+    <p class="err" id="rErr" hidden></p>`;
+  if (!r) $('editSty').onclick = () => go('book', 2);
+  if ($('slipBtn')) $('slipBtn').onclick = () => pickImage(img => { draft.slip = img; stepReview(); });
+  foot('', r ? ctaLabel('ยืนยันเลื่อนนัด', 'CONFIRM') : ctaLabel('ยืนยันการจอง', 'CONFIRM'), submit, C.promptpay && !r && !draft.slip);
+}
+
+async function submit() {
+  $('cta').disabled = true; $('cta').innerHTML = ctaLabel('กำลังส่ง…', 'PLEASE WAIT');
+  try {
+    let res;
+    if (draft.reschedule) {
+      res = await api({ action: 'reschedule', id: draft.reschedule.id, date: draft.date, time: draft.time });
+    } else {
+      res = await api({ action: 'book', services: draft.services, length: draft.length, stylist: draft.stylist,
+        date: draft.date, time: draft.time, name: draft.name.trim(), phone: draft.phone, pronoun: draft.pronoun,
+        chemicals: draft.chemicals, note: draft.note, photos: draft.photos, slip: draft.slip, consent: draft.consent });
     }
-  })();
+    my = null;
+    go('done');
+    renderDone(res.booking, Boolean(draft.reschedule));
+    draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: draft.length };
+  } catch (e) {
+    $('rErr').textContent = e.message; $('rErr').hidden = false;
+    $('cta').disabled = false; $('cta').innerHTML = ctaLabel('ลองอีกครั้ง', 'RETRY');
+    if (/เพิ่งถูกจอง|ผ่านไปแล้ว/.test(e.message)) { draft.time = null; setTimeout(() => go('book', 3), 1600); }
+  }
+}
+
+function renderDone(b, moved) {
+  if (!b) return;
+  $('view').innerHTML = `<div class="done"><div class="tick frame">✓</div>
+    <h1>${moved ? 'เลื่อนนัดเรียบร้อย' : 'จองสำเร็จ'}</h1>
+    <p class="lead">เราส่งรายละเอียดไปในแชต LINE แล้ว และจะแจ้งเตือนอีกครั้งก่อนถึงนัด 1 วัน</p></div>
+    <div class="bk frame"><div class="cal"><small>${EN_DAY[parseYmd(b.date).getDay()]}</small><b>${parseYmd(b.date).getDate()}</b><small>${EN_MON[parseYmd(b.date).getMonth()]}</small></div>
+      <div class="info"><span class="st">✓ CONFIRMED · ${esc(b.id)}</span><big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div></div>`;
+  foot('', ctaLabel('ดูนัดของฉัน', 'MY BOOKING'), () => go('my'));
+}
+
+// ---------- MY BOOKINGS ----------
+async function renderMy() {
+  $('view').innerHTML = `<div class="eyebrow" style="margin-top:0"><h1>นัดของฉัน</h1><span class="lead" style="margin:0">${profile ? 'สวัสดี ' + esc(draft.name || profile.displayName) : ''}</span></div>
+    <div id="myBody"><div class="loading">LOADING…</div></div>`;
+  foot('', ctaLabel('+ จองคิวใหม่', 'NEW BOOKING'), () => { draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: draft.length }; go('book', 1); });
+  try { if (!my) my = await api({ action: 'my' }); } catch (e) { $('myBody').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  if (page !== 'my') return;
+  const up = my.upcoming, past = my.past;
+  const daysLeft = d => Math.round((parseYmd(d) - new Date(new Date().toDateString())) / 86400000);
+  $('myBody').innerHTML = `<div class="tabs"><button data-tab="up" class="${myTab === 'up' ? 'on' : ''}">กำลังจะถึง (${up.length})</button>
+      <button data-tab="past" class="${myTab === 'past' ? 'on' : ''}">ประวัติ (${past.length})</button></div>
+    ${myTab === 'up' ? (up.length ? up.map(b => { const d = parseYmd(b.date); const left = daysLeft(b.date);
+      return `<div class="bk frame"><div class="cal"><small>${EN_DAY[d.getDay()]}</small><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
+        <div class="info"><span class="st">✓ ${b.status === 'ยืนยันแล้ว' ? 'CONFIRMED' : esc(b.status)} · ${left === 0 ? 'วันนี้' : left === 1 ? 'พรุ่งนี้' : 'อีก ' + left + ' วัน'}</span>
+          <big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div>
+        ${b.status === 'ยืนยันแล้ว' ? `<div class="acts"><button data-move="${esc(b.id)}">เลื่อนนัด</button><button data-cal="${esc(b.id)}">ลงปฏิทิน</button><button class="danger" data-cancel="${esc(b.id)}">ยกเลิก</button></div>` : ''}</div>`; }).join('')
+      : '<div class="empty">ยังไม่มีนัดที่กำลังจะถึง</div>')
+    : (past.length ? `<span class="label">ล่าสุด · PAST</span>` + past.map(b => { const d = parseYmd(b.date);
+      return `<div class="past"><div class="d"><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
+        <div>${esc(b.services)}<br><small>${esc(b.stylist)} · ${baht(b.price)} · ${esc(b.status)}</small></div>
+        <button class="link" data-again="${esc(b.id)}">จองซ้ำ ↻</button></div>`; }).join('') : '<div class="empty">ยังไม่มีประวัติ</div>')}
+    <div class="shopline">⌖ ${esc(C.shop.name)} · ${esc(C.shop.hours)}</div>`;
+  const find = id => [...up, ...past].find(b => b.id === id);
+  $('myBody').querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { myTab = b.dataset.tab; renderMy(); });
+  $('myBody').querySelectorAll('[data-move]').forEach(btn => btn.onclick = () => {
+    const b = find(btn.dataset.move);
+    draft = { ...newDraft(), date: b.date, stylist: (C.stylists.find(s => s.name === b.stylist) || {}).id || 'any', reschedule: b };
+    go('book', 3);
+  });
+  $('myBody').querySelectorAll('[data-cal]').forEach(btn => btn.onclick = () => {
+    const b = find(btn.dataset.cal);
+    const t = (d, hm) => d.replace(/-/g, '') + 'T' + hm.replace(':', '') + '00';
+    const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE&ctz=Asia/Bangkok'
+      + `&text=${encodeURIComponent('Million Hair · ' + b.services)}&dates=${t(b.date, b.start)}/${t(b.date, b.end)}`
+      + `&details=${encodeURIComponent('ช่าง ' + b.stylist + ' · รหัส ' + b.id)}`;
+    liff.openWindow({ url, external: true });
+  });
+  $('myBody').querySelectorAll('[data-cancel]').forEach(btn => btn.onclick = async () => {
+    const b = find(btn.dataset.cancel);
+    const hrs = (parseYmd(b.date).getTime() + (Number(b.start.slice(0, 2)) * 60 + Number(b.start.slice(3))) * 60000 - Date.now()) / 3600000;
+    if (!confirm(`ยกเลิกนัด ${thDate(b.date)} ${b.start} น.?` + (hrs < 24 ? '\n\nยกเลิกภายใน 24 ชม. ก่อนนัด มัดจำจะไม่ได้รับคืน' : '\n\nยกเลิกก่อน 24 ชม. คืนมัดจำเต็มจำนวน'))) return;
+    btn.disabled = true;
+    try { await api({ action: 'cancel', id: b.id }); my = null; renderMy(); } catch (e) { alert(e.message); btn.disabled = false; }
+  });
+  $('myBody').querySelectorAll('[data-again]').forEach(btn => btn.onclick = () => {
+    const b = find(btn.dataset.again);
+    const ids = b.services.split(', ').map(n => (C.services.find(s => s.th === n) || {}).id).filter(Boolean);
+    draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: b.length || 'M', services: ids,
+      stylist: (C.stylists.find(s => s.name === b.stylist) || {}).id || 'any' };
+    go('book', 1);
+  });
+}
+
+// ---------- info pages ----------
+function renderPrice() {
+  $('view').innerHTML = `<span class="label">PRICE LIST</span><h1>ราคาบริการ</h1>
+    <p class="lead">งานเคมีคิดราคาตามความยาวผม (S · M · L · XL) ไม่แบ่งราคาตามเพศ</p>
+    <table class="ptable"><tr><th>SERVICE</th>${C.lengths.map(l => `<th>${l.code}</th>`).join('')}</tr>
+      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${s.min} MIN</small></td>${C.lengths.map(l => `<td>${priceOf(s, l.code).toLocaleString('en-US')}</td>`).join('')}</tr>`).join('')}</table>
+    <p class="lead" style="margin-top:14px">S = สั้น · M = ประบ่า · L = ยาว · XL = ยาวมาก · ราคาเป็นบาท</p>`;
+  foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
+}
+function renderStylists() {
+  $('view').innerHTML = `<span class="label">OUR TEAM</span><h1>ช่างของเรา</h1><p class="lead">เลือกช่างที่ใช่ หรือเลือก Any ตอนจองเพื่อให้ร้านจัดช่างที่ว่างให้</p>
+    <div class="grid2">${C.stylists.map(s => `<button class="sty frame" data-sty="${s.id}"><div class="pic hatch">PORTRAIT</div>
+      <div class="meta"><b>${esc(s.name)}</b><small>${esc(s.role)}</small></div></button>`).join('')}</div>`;
+  $('view').querySelectorAll('[data-sty]').forEach(b => b.onclick = () => { draft.stylist = b.dataset.sty; go('book', 1); });
+  foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
+}
+function renderLookbook() {
+  const looks = [['Korean Two-block', 'Max'], ['Soft Wolf Cut', 'Tee'], ['Balayage Ash', 'Ploy'], ['Body Perm', 'Ken'],
+    ['Glass Hair', 'Nina'], ['French Bob', 'Max']];
+  $('view').innerHTML = `<span class="label">LOOKBOOK</span><h1>ผลงาน</h1><p class="lead">ตัวอย่างทรงยอดนิยมของร้าน (ภาพตัวอย่างสำหรับต้นแบบ)</p>
+    <div class="look">${looks.map(([n, s]) => `<div class="pic hatch frame"><div><b>${n}</b><small>by ${s}</small></div></div>`).join('')}</div>`;
+  foot('', ctaLabel('จองทรงนี้', 'BOOK NOW'), () => go('book', 1));
+}
+function renderAbout() {
+  $('view').innerHTML = `<span class="label">ABOUT</span><h1>${esc(C.shop.name)}</h1>
+    <div class="kv frame" style="margin-top:14px">
+      <div><span class="label">Hours</span><br>${esc(C.shop.hours)}</div>
+      <div><span class="label">Address</span><br>${esc(C.shop.address)}</div>
+      <div><span class="label">Phone</span><br>${esc(C.shop.phone)}</div>
+      <div><span class="label">Deposit & Cancel</span><br>มัดจำ ${baht(C.shop.deposit)} หักจากค่าบริการวันจริง · เลื่อน/ยกเลิกก่อน 24 ชม. ฟรี · ภายใน 24 ชม. ไม่คืนมัดจำ</div>
+      <div><span class="label">Privacy</span><br>ข้อมูลใช้เพื่อจัดการนัดหมายเท่านั้น ไม่เปิดเผยต่อบุคคลอื่น</div>
+    </div><p class="note">ร้านสมมติสำหรับโครงงาน Digital Transformation</p>`;
+  foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
+}
+
+// ---------- utils ----------
+function qrSvg(text) {
+  const qr = qrcode(0, 'M'); qr.addData(text); qr.make();
+  return qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+}
+function pickImage(cb) {
+  const input = $('filePick');
+  input.value = '';
+  input.onchange = () => {
+    const f = input.files[0]; if (!f) return;
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(img.src);
+      cb(c.toDataURL('image/jpeg', 0.8));
+    };
+    img.src = URL.createObjectURL(f);
+  };
+  input.click();
+}
+
+$('back').onclick = () => {
+  if (page === 'book' && step > 1) { go('book', draft.reschedule && step === 5 ? 3 : step - 1); return; }
+  if (page === 'book' && draft.reschedule) { draft = newDraft(); go('my'); return; }
+  if (page !== 'book') { go('book', 1); return; }
+  if (liff.isInClient()) liff.closeWindow();
+};
+$('close').onclick = () => { if (liff.isInClient()) liff.closeWindow(); else go('book', 1); };
+
+// ---------- boot ----------
+(async () => {
+  try {
+    const cfgP = fetch(`${GAS_URL}?action=config`).then(r => r.json());
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    [C, profile] = await Promise.all([cfgP, liff.getProfile()]);
+    draft = newDraft();
+    draft.name = profile.displayName || '';
+    api({ action: 'last' }).then(r => { if (r.profile) Object.assign(draft, { name: r.profile.name, phone: r.profile.phone,
+      pronoun: r.profile.pronoun || 'ไม่ระบุ', length: r.profile.length || 'M' }); if (page === 'book' && step === 1) render(); })
+      .catch(e => {
+        if (/หมดอายุ/.test(e.message) && !liff.isInClient() && !sessionStorage.getItem('relogin')) {
+          sessionStorage.setItem('relogin', '1'); liff.logout(); liff.login({ redirectUri: location.href });
+        }
+      });
+    const p = new URLSearchParams(location.search).get('page');
+    go(['book', 'my', 'price', 'stylists', 'lookbook', 'about'].includes(p) ? p : 'book', 1);
+  } catch (e) {
+    $('view').innerHTML = `<p class="err">เปิดหน้าไม่สำเร็จ: ${esc(e.message)}</p>`;
+  }
+})();
 </script>
 </body>
 </html>

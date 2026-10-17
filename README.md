@@ -1,10 +1,11 @@
-# Million Hair — Virtual Queue
+# Million Hair Studio — LINE Booking
 
-ต้นแบบระบบคิวเสมือนสำหรับร้านทำผม (โครงงาน Digital Transformation)
+ต้นแบบระบบจองคิวทำผมผ่าน LINE (โครงงาน Digital Transformation · ร้านสมมติ)
 
-- `docs/index.html` — หน้า LIFF ลงคิว (โฮสต์บน GitHub Pages)
-- `apps-script/Code.gs` — backend บน Google Apps Script ผูกกับ Google Sheets
+- `docs/index.html` — LIFF app ลูกค้า: จอง 5 ขั้น (บริการ → ช่าง → วัน-เวลา → รายละเอียด → ยืนยัน/มัดจำ), นัดของฉัน (เลื่อน/ยกเลิก/ลงปฏิทิน/จองซ้ำ), ราคา, ช่าง, Lookbook
+- `docs/admin/` — หลังบ้าน: ตารางนัดรายช่าง, เปลี่ยนสถานะ, ตรวจสลิป, เพิ่มนัด Walk-in/โทรจอง, รายงาน + CSV/PDF
+- `apps-script/Code.gs` — backend บน Google Apps Script + Google Sheets (แท็บ Bookings), Flex message, แจ้งเตือนก่อนวันนัด, rich menu
+- `docs/assets/` — โลโก้และรูป rich menu · `richmenu/brand.html` คือไฟล์ต้นฉบับที่ใช้ render
+- `docs/vendor/qrcode-2.0.4.js` — qrcode-generator (MIT, Kazuhiko Arase) สำหรับ QR PromptPay
 
-Flow: ลูกค้าสแกน QR → LIFF ลงคิว → Apps Script บันทึกลง Sheets → พนักงานเปลี่ยนสถานะเป็น "ใกล้ถึงคิว" → Push แจ้งเตือนผ่าน LINE
-
-ไม่มี secret ใน repo นี้ — Channel access token และ Login Channel ID เก็บใน Script Properties ของ Apps Script เท่านั้น
+ไม่มี secret ใน repo — token, Channel ID, Admin IDs และ PromptPay ID เก็บใน Script Properties ของ Apps Script เท่านั้น

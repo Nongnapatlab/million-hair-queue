@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100;300&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; overflow: hidden; }
+  /* ---- logo 1200x300 ---- */
+  .logo { width: 1200px; height: 300px; background: #1E2B3C; color: #F3F3F1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .logo .word { font: 100 168px 'Josefin Sans', sans-serif; letter-spacing: 6px; line-height: .9; }
+  .logo .sub { font: 300 30px 'Josefin Sans', sans-serif; letter-spacing: 18px; margin-top: 18px; }
+  /* ---- rich menu 2500x1686 ---- */
+  .rm { width: 2500px; height: 1686px; background: #1E2B3C; display: grid; grid-template-columns: 833px 833px 834px; grid-template-rows: 843px 843px; position: relative; }
+  .cell { position: relative; color: #F3F3F1; padding: 70px 72px; display: flex; flex-direction: column; justify-content: flex-end; border-right: 2px solid #34465C; border-bottom: 2px solid #34465C; }
+  .cell.book { grid-column: span 2; background: #5A7FA8; }
+  .cell.mine { background: #24344A; }
+  .num { position: absolute; top: 64px; left: 72px; font: 500 40px 'IBM Plex Mono', monospace; letter-spacing: 6px; color: #C9D6E6; }
+  .en { font: 700 150px 'Barlow Condensed', sans-serif; line-height: .9; letter-spacing: 2px; }
+  .book .en { font-size: 250px; }
+  .th { font: 500 58px 'IBM Plex Sans Thai', sans-serif; color: #C9D6E6; margin-top: 18px; }
+  .mine .en { font-size: 130px; }
+  .cross { position: absolute; width: 44px; height: 44px; }
+  .cross::before, .cross::after { content: ""; position: absolute; background: #9DB7D5; }
+  .cross::before { left: 21px; top: 0; width: 2px; height: 44px; } .cross::after { top: 21px; left: 0; height: 2px; width: 44px; }
+  .arrow { position: absolute; right: 72px; top: 60px; font: 700 80px 'Barlow Condensed', sans-serif; color: #fff; }
+</style>
+<script>if (location.hash === '#rm') document.documentElement.dataset.mode = 'rm';</script>
+</head>
+<body>
+<div class="logo" id="logo"><div class="word">MILLION</div><div class="sub">✦ HAIR STUDIO ✦</div></div>
+<div class="rm" id="rm">
+  <div class="cell book"><span class="num">01 ✦</span><span class="arrow">→</span><div class="en">BOOK NOW</div><div class="th">จองคิวทำผม</div></div>
+  <div class="cell mine"><span class="num">02</span><div class="en">MY<br>BOOKING</div><div class="th">นัดของฉัน</div></div>
+  <div class="cell"><span class="num">03</span><div class="en">PRICE</div><div class="th">ราคาบริการ</div></div>
+  <div class="cell"><span class="num">04</span><div class="en">STYLISTS</div><div class="th">ช่างของเรา</div></div>
+  <div class="cell"><span class="num">05</span><div class="en">LOOKBOOK</div><div class="th">ผลงาน</div></div>
+  <span class="cross" style="left:811px;top:821px"></span><span class="cross" style="left:1644px;top:821px"></span>
+</div>
+<script>
+  const rm = location.hash === '#rm';
+  document.getElementById(rm ? 'logo' : 'rm').remove();
+</script>
+</body>
+</html>
