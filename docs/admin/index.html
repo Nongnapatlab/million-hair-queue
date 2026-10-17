@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Million Hair · หลังบ้าน</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #14294A; --navy-2: #1F3A63; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C; --orange-soft: #FBE9DF;
+    --gold: #F4A259; --bg: #F4F6F3; --card: #FCFDFB; --line: #DDE3DF; --text: #14294A; --muted: #4A5568;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sarabun', Tahoma, sans-serif; font-size: 15px; }
+  .layout { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+  aside { background: var(--navy); color: #BFD0E0; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; }
+  aside .brand { color: var(--gold); font: 600 13px 'Prompt', sans-serif; letter-spacing: 3px; padding: 0 12px; }
+  aside .shop { color: #F4F6F3; font: 600 20px 'Prompt', sans-serif; padding: 2px 12px 20px; }
+  aside .group { font-size: 12px; color: #8FA3BC; padding: 14px 12px 6px; }
+  aside a { display: flex; gap: 10px; align-items: center; color: #DCE6F2; text-decoration: none; padding: 10px 12px; border-radius: 10px; cursor: pointer; }
+  aside a.on { background: var(--navy-2); color: #FFF; box-shadow: inset 3px 0 0 var(--gold); }
+  aside a:hover { background: var(--navy-2); }
+  aside .me { margin-top: auto; font-size: 13px; color: #8FA3BC; padding: 12px; }
+  main { padding: 28px 32px 48px; max-width: 1200px; width: 100%; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+  h1 { font: 600 28px 'Prompt', sans-serif; margin: 0; }
+  h2 { font: 600 17px 'Prompt', sans-serif; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin-top: 4px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi span { color: var(--muted); font-size: 13px; }
+  .kpi b { display: block; font: 600 28px 'Prompt', sans-serif; margin: 2px 0; }
+  .kpi small { font-size: 12px; color: var(--muted); }
+  .kpi small.up { color: var(--teal); } .kpi small.down { color: var(--orange); }
+  button, .btn { font: 600 14px 'Prompt', sans-serif; border: 0; border-radius: 10px; padding: 9px 14px; cursor: pointer; background: var(--teal); color: #F4F6F3; }
+  button.ghost { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); }
+  button.warn { background: transparent; color: var(--orange); border: 1.5px solid var(--orange); }
+  button.dark { background: var(--navy); }
+  button:disabled { opacity: .5; cursor: default; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tabs button { background: var(--card); color: var(--muted); border: 1px solid var(--line); }
+  .tabs button.on { background: var(--navy); color: #F4F6F3; border-color: var(--navy); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 13px; color: var(--muted); font-weight: 600; background: #EEF2EF; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #E3E8E5; color: var(--navy); white-space: nowrap; }
+  .pill.รอคิว { background: #DCE6F2; } .pill.ใกล้ถึงคิว { background: var(--orange-soft); color: var(--orange); }
+  .pill.รับบริการ { background: var(--teal-soft); color: var(--teal); } .pill.เสร็จสิ้น { background: #E3E8E5; color: var(--muted); }
+  .pill.ไม่มา { background: #F3E3E3; color: #9B2C2C; }
+  .tag { font-size: 12px; color: var(--muted); }
+  .q { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--line); }
+  .q:last-child { border-bottom: 0; }
+  .q .no { font: 600 30px 'Prompt', sans-serif; text-align: center; }
+  .q .who b { font-size: 16px; }
+  .q .who div { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .q .act { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .bars { display: grid; gap: 6px; }
+  .bar { display: grid; grid-template-columns: 52px 1fr 40px; gap: 10px; align-items: center; font-size: 13px; }
+  .bar i { display: block; height: 12px; border-radius: 6px; background: var(--teal); min-width: 3px; }
+  .bar span:last-child { text-align: right; color: var(--muted); }
+  form.walkin { display: grid; grid-template-columns: 1.2fr 1fr 1fr 1.4fr auto; gap: 10px; align-items: end; }
+  label { font-size: 13px; color: var(--muted); display: grid; gap: 4px; }
+  input, select { font: inherit; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; color: var(--text); }
+  .empty { color: var(--muted); text-align: center; padding: 20px; }
+  .error { color: var(--orange); font-weight: 600; }
+  .gate { max-width: 560px; margin: 80px auto; }
+  code { background: #EEF2EF; padding: 2px 6px; border-radius: 6px; word-break: break-all; }
+  [hidden] { display: none !important; }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { flex-direction: row; flex-wrap: wrap; padding: 12px; }
+    aside .group, aside .me { display: none; }
+    aside .shop { padding: 2px 12px; width: 100%; }
+    main { padding: 20px 16px; }
+    .grid2, form.walkin { grid-template-columns: 1fr; }
+    .q { grid-template-columns: 48px 1fr; } .q .act { grid-column: 1 / -1; justify-content: flex-start; }
+  }
+  @media print {
+    aside, .noprint { display: none !important; }
+    .layout { display: block; } main { padding: 0; } body { background: #fff; }
+    .card, .kpi { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div id="gate" class="card gate">
+  <h2>Million Hair · หลังบ้าน</h2>
+  <p id="gateMsg">กำลังเข้าสู่ระบบด้วย LINE…</p>
+</div>
+
+<div class="layout" id="app" hidden>
+  <aside>
+    <div class="brand">MILLION HAIR</div>
+    <div class="shop">หลังบ้านร้าน</div>
+    <div class="group">ภาพรวม</div>
+    <a data-view="queue" class="on">🗂️ จัดการคิว</a>
+    <a data-view="report">📈 รายงาน</a>
+    <div class="group">ลิงก์</div>
+    <a href="../" target="_blank">📱 หน้าลูกค้า (LIFF)</a>
+    <div class="me" id="me"></div>
+  </aside>
+
+  <main>
+    <!-- จัดการคิว -->
+    <section data-page="queue">
+      <div class="top">
+        <div><h1>จัดการคิววันนี้</h1><div class="sub" id="today"></div></div>
+        <button class="ghost noprint" id="reloadQueue">↻ รีเฟรช</button>
+      </div>
+      <div class="kpis" id="queueKpis"></div>
+
+      <div class="card noprint">
+        <h2>เพิ่มคิว Walk-in</h2>
+        <form class="walkin" id="walkin">
+          <label>ชื่อลูกค้า<input id="wName" required maxlength="50"></label>
+          <label>บริการ<select id="wService"></select></label>
+          <label>ช่าง<select id="wStylist"></select></label>
+          <label>หมายเหตุ<input id="wNote" maxlength="200"></label>
+          <button type="submit">+ เพิ่มคิว</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>คิวที่กำลังดำเนินการ</h2>
+        <div id="activeList"></div>
+      </div>
+      <div class="card">
+        <h2>เสร็จแล้ว / ไม่มา</h2>
+        <div id="doneList"></div>
+      </div>
+    </section>
+
+    <!-- รายงาน -->
+    <section data-page="report" hidden>
+      <div class="top">
+        <div><h1>รายงาน</h1><div class="sub" id="rangeLabel"></div></div>
+        <div class="tabs noprint">
+          <button id="csv" class="ghost">⬇ Export CSV</button>
+          <button id="print" class="dark">🖨 บันทึก PDF</button>
+        </div>
+      </div>
+      <div class="tabs noprint" id="presets" style="margin-bottom:16px">
+        <button data-p="today" class="on">วันนี้</button>
+        <button data-p="yesterday">เมื่อวาน</button>
+        <button data-p="7">ย้อนหลัง 7 วัน</button>
+        <button data-p="30">ย้อนหลัง 30 วัน</button>
+        <button data-p="month">เดือนนี้</button>
+      </div>
+      <div class="kpis" id="reportKpis"></div>
+      <div class="grid2">
+        <div class="card"><h2>บริการยอดนิยม</h2><div id="topServices"></div></div>
+        <div class="card"><h2>รายช่าง</h2><div id="byStylist"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h2>จำนวนคิวรายชั่วโมง</h2><div class="bars" id="hourly"></div></div>
+        <div class="card"><h2>ช่องทางลงคิว</h2><div id="channels"></div></div>
+      </div>
+      <div class="card"><h2>รายการคิวทั้งหมด</h2><div id="allRows" style="overflow-x:auto"></div></div>
+    </section>
+  </main>
+</div>
+
+<script src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script>
+<script>
+  const LIFF_ID = '2012052973-UNW6H5DF';
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const hm = iso => iso ? new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '–';
+  const mins = (a, b) => (a && b) ? (new Date(b) - new Date(a)) / 60000 : null;
+  const avg = xs => xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : null;
+  const thDate = d => d.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+  let config = null, reportRows = [];
+
+  async function api(payload) {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ ...payload, idToken: liff.getIDToken() }),
+    });
+    return res.json();
+  }
+  async function adminApi(payload) {
+    const d = await api(payload);
+    if (!d.ok) throw new Error(d.error || 'เกิดข้อผิดพลาด');
+    return d;
+  }
+
+  // ---------- navigation ----------
+  document.querySelectorAll('aside a[data-view]').forEach(a => a.addEventListener('click', () => {
+    document.querySelectorAll('aside a[data-view]').forEach(x => x.classList.toggle('on', x === a));
+    document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== a.dataset.view);
+    if (a.dataset.view === 'report' && !reportRows.length) loadReport('today');
+  }));
+
+  // ---------- queue board ----------
+  const NEXT = {
+    'รอคิว': [['ใกล้ถึงคิว', '📣 เรียกคิว (แจ้ง LINE)', ''], ['ไม่มา', 'ไม่มา', 'warn']],
+    'ใกล้ถึงคิว': [['รับบริการ', '✂️ เริ่มบริการ', ''], ['ไม่มา', 'ไม่มา', 'warn']],
+    'รับบริการ': [['เสร็จสิ้น', '✓ เสร็จสิ้น', 'dark']],
+  };
+
+  function visitTag(r) {
+    if (r.channel === 'Walk-in') return 'Walk-in';
+    return r.visit > 1 ? `LINE · มาครั้งที่ ${r.visit}` : 'LINE · ลูกค้าใหม่';
+  }
+
+  function queueItem(r) {
+    const waited = Math.round(mins(r.ts, new Date().toISOString()));
+    const meta = [r.service, r.stylist, r.phone && `โทร ${r.phone}`, `ลงคิว ${hm(r.ts)} (${waited} นาทีที่แล้ว)`]
+      .filter(Boolean).map(esc).join(' · ');
+    const buttons = (NEXT[r.status] || []).map(([to, label, cls]) =>
+      `<button class="${cls}" data-row="${r.row}" data-to="${esc(to)}">${esc(label)}</button>`).join('');
+    return `<div class="q"><div class="no">${esc(r.no)}</div>
+      <div class="who"><b>${esc(r.name)}</b> <span class="pill ${esc(r.status)}">${esc(r.status)}</span> <span class="tag">${esc(visitTag(r))}</span>
+      <div>${meta}</div>${r.note ? `<div>📝 ${esc(r.note)}</div>` : ''}</div>
+      <div class="act">${buttons}</div></div>`;
+  }
+
+  async function loadQueue() {
+    const d = await adminApi({ action: 'admin_queue' });
+    const rows = d.rows;
+    const count = s => rows.filter(r => r.status === s).length;
+    $('queueKpis').innerHTML = [['รอคิว', count('รอคิว')], ['ใกล้ถึงคิว', count('ใกล้ถึงคิว')], ['รับบริการ', count('รับบริการ')],
+      ['เสร็จสิ้น', count('เสร็จสิ้น')], ['ไม่มา', count('ไม่มา')]]
+      .map(([k, v]) => `<div class="kpi"><span>${k}</span><b>${v}</b></div>`).join('');
+    const active = rows.filter(r => NEXT[r.status]);
+    const done = rows.filter(r => !NEXT[r.status]).reverse();
+    $('activeList').innerHTML = active.length ? active.map(queueItem).join('') : '<p class="empty">ยังไม่มีคิวที่รออยู่</p>';
+    $('doneList').innerHTML = done.length ? done.map(queueItem).join('') : '<p class="empty">ยังไม่มี</p>';
+  }
+
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('button[data-to]');
+    if (!b) return;
+    b.disabled = true;
+    try {
+      await adminApi({ action: 'admin_set_status', row: Number(b.dataset.row), status: b.dataset.to });
+      await loadQueue();
+    } catch (err) { alert(err.message); b.disabled = false; }
+  });
+  $('reloadQueue').addEventListener('click', () => loadQueue().catch(e => alert(e.message)));
+
+  $('walkin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = e.submitter; btn.disabled = true;
+    try {
+      await adminApi({ action: 'admin_walkin', name: $('wName').value, service: $('wService').value,
+        stylist: $('wStylist').value, note: $('wNote').value });
+      $('wName').value = ''; $('wNote').value = '';
+      await loadQueue();
+    } catch (err) { alert(err.message); }
+    btn.disabled = false;
+  });
+
+  // ---------- report ----------
+  function range(p) {
+    const now = new Date(); const t = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const add = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+    if (p === 'today') return [t, t];
+    if (p === 'yesterday') return [add(t, -1), add(t, -1)];
+    if (p === 'month') return [new Date(t.getFullYear(), t.getMonth(), 1), t];
+    return [add(t, -(Number(p) - 1)), t];
+  }
+
+  function stats(rows) {
+    const done = rows.filter(r => r.status === 'เสร็จสิ้น');
+    const noShow = rows.filter(r => r.status === 'ไม่มา');
+    const closed = done.length + noShow.length;
+    const priceOf = name => Number(String((config.services.find(s => s.name === name) || {}).price || '').replace(/\D/g, '')) || 0;
+    const line = rows.filter(r => r.channel === 'LINE');
+    return {
+      total: rows.length, done: done.length, noShow: noShow.length,
+      noShowPct: closed ? noShow.length / closed * 100 : 0,
+      newC: line.filter(r => Number(r.visit) === 1).length, returning: line.filter(r => Number(r.visit) > 1).length,
+      wait: avg(rows.map(r => mins(r.ts, r.started)).filter(x => x != null && x >= 0)),
+      service: avg(rows.map(r => mins(r.started, r.finished)).filter(x => x != null && x >= 0)),
+      revenue: done.reduce((s, r) => s + priceOf(r.service), 0),
+    };
+  }
+
+  function delta(cur, prev, lowerIsBetter) {
+    if (prev == null || cur == null) return '<small>—</small>';
+    const diff = cur - prev;
+    if (Math.abs(diff) < 0.05) return '<small>เท่ากับช่วงก่อน</small>';
+    const good = lowerIsBetter ? diff < 0 : diff > 0;
+    return `<small class="${good ? 'up' : 'down'}">${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(Number.isInteger(diff) ? 0 : 1)} จากช่วงก่อน</small>`;
+  }
+
+  async function loadReport(p) {
+    document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('on', b.dataset.p === p));
+    const [from, to] = range(p);
+    const days = Math.round((to - from) / 86400000) + 1;
+    const prevFrom = new Date(from.getFullYear(), from.getMonth(), from.getDate() - days);
+    $('rangeLabel').textContent = days === 1 ? thDate(from) : `${thDate(from)} – ${thDate(to)}`;
+    $('reportKpis').innerHTML = '<p class="empty">กำลังโหลด…</p>';
+
+    const d = await adminApi({ action: 'admin_report', from: ymd(prevFrom), to: ymd(to) });
+    const inCur = r => ymd(new Date(r.ts)) >= ymd(from);
+    reportRows = d.rows.filter(inCur);
+    const prevRows = d.rows.filter(r => !inCur(r));
+    const c = stats(reportRows), pv = prevRows.length ? stats(prevRows) : {};
+    const f = x => x == null ? '–' : x.toFixed(0);
+
+    $('reportKpis').innerHTML = [
+      ['คิวทั้งหมด', c.total, delta(c.total, pv.total)],
+      ['เสร็จสิ้น', c.done, delta(c.done, pv.done)],
+      ['ไม่มา', c.noShow, delta(c.noShow, pv.noShow, true)],
+      ['อัตราไม่มา', `${c.noShowPct.toFixed(0)}%`, delta(c.noShowPct, pv.noShowPct, true)],
+      ['ลูกค้าใหม่ / กลับมาซ้ำ', `${c.newC} / ${c.returning}`, '<small>เฉพาะคิวผ่าน LINE</small>'],
+      ['เวลารอเฉลี่ย', `${f(c.wait)} นาที`, delta(c.wait, pv.wait, true)],
+      ['เวลาบริการเฉลี่ย', `${f(c.service)} นาที`, '<small>เริ่ม → เสร็จ</small>'],
+      ['รายได้โดยประมาณ', `฿${c.revenue.toLocaleString('th-TH')}`, delta(c.revenue, pv.revenue)],
+    ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b>${v}</b>${s}</div>`).join('');
+
+    const tbl = (head, body) => body.length
+      ? `<table><tr>${head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('')}</tr>${body.join('')}</table>`
+      : '<p class="empty">ไม่มีข้อมูลในช่วงนี้</p>';
+
+    const bySvc = {};
+    reportRows.forEach(r => { bySvc[r.service] = (bySvc[r.service] || 0) + 1; });
+    $('topServices').innerHTML = tbl([['บริการ'], ['คิว', 'num'], ['สัดส่วน', 'num']],
+      Object.entries(bySvc).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+        `<tr><td>${esc(k)}</td><td class="num">${v}</td><td class="num">${(v / c.total * 100).toFixed(0)}%</td></tr>`));
+
+    const names = [...new Set(reportRows.map(r => r.stylist || 'ไม่ระบุ'))];
+    $('byStylist').innerHTML = tbl([['ช่าง'], ['คิว', 'num'], ['เสร็จ', 'num'], ['ไม่มา', 'num'], ['สำเร็จ', 'num']],
+      names.map(n => {
+        const rs = reportRows.filter(r => (r.stylist || 'ไม่ระบุ') === n);
+        const dn = rs.filter(r => r.status === 'เสร็จสิ้น').length, ns = rs.filter(r => r.status === 'ไม่มา').length;
+        return `<tr><td>${esc(n)}</td><td class="num">${rs.length}</td><td class="num">${dn}</td><td class="num">${ns}</td><td class="num">${dn + ns ? (dn / (dn + ns) * 100).toFixed(0) + '%' : '–'}</td></tr>`;
+      }));
+
+    const hours = {}; for (let h = 10; h < 20; h++) hours[h] = 0;
+    reportRows.forEach(r => { const h = new Date(r.ts).getHours(); if (h in hours) hours[h]++; });
+    const max = Math.max(1, ...Object.values(hours));
+    $('hourly').innerHTML = Object.entries(hours).map(([h, v]) =>
+      `<div class="bar"><span>${h}:00</span><i style="width:${v / max * 100}%"></i><span>${v}</span></div>`).join('');
+
+    const lineN = reportRows.filter(r => r.channel === 'LINE').length;
+    $('channels').innerHTML = tbl([['ช่องทาง'], ['คิว', 'num'], ['สัดส่วน', 'num']],
+      [['LINE', lineN], ['Walk-in', c.total - lineN]].map(([k, v]) =>
+        `<tr><td>${k}</td><td class="num">${v}</td><td class="num">${c.total ? (v / c.total * 100).toFixed(0) : 0}%</td></tr>`));
+
+    $('allRows').innerHTML = tbl([['วันที่'], ['เวลา'], ['คิว', 'num'], ['ลูกค้า'], ['โทร'], ['บริการ'], ['ช่าง'], ['สถานะ'], ['รอ (นาที)', 'num'], ['หมายเหตุ']],
+      reportRows.map(r => `<tr><td>${new Date(r.ts).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}</td><td>${hm(r.ts)}</td>
+        <td class="num">${esc(r.no)}</td><td>${esc(r.name)}</td><td>${esc(r.phone)}</td><td>${esc(r.service)}</td><td>${esc(r.stylist)}</td>
+        <td><span class="pill ${esc(r.status)}">${esc(r.status)}</span></td><td class="num">${mins(r.ts, r.started) != null ? Math.round(mins(r.ts, r.started)) : '–'}</td><td>${esc(r.note)}</td></tr>`));
+  }
+
+  $('presets').addEventListener('click', e => { if (e.target.dataset.p) loadReport(e.target.dataset.p).catch(x => alert(x.message)); });
+  $('print').addEventListener('click', () => window.print());
+  $('csv').addEventListener('click', () => {
+    const cols = ['ts', 'no', 'name', 'phone', 'service', 'stylist', 'status', 'channel', 'visit', 'called', 'started', 'finished', 'note'];
+    const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = '﻿' + [cols.join(','), ...reportRows.map(r => cols.map(k => cell(r[k])).join(','))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = `million-hair-report-${ymd(new Date())}.csv`;
+    a.click();
+  });
+
+  // ---------- boot ----------
+  (async () => {
+    try {
+      const configP = fetch(`${GAS_URL}?action=config`).then(r => r.json());
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+      const probe = await api({ action: 'admin_queue' });
+      if (!probe.ok) {
+        if (/หมดอายุ/.test(probe.error) && !sessionStorage.getItem('relogin')) {
+          sessionStorage.setItem('relogin', '1'); liff.logout(); liff.login({ redirectUri: location.href }); return;
+        }
+        $('gateMsg').innerHTML = probe.error === 'NOT_ADMIN'
+          ? `บัญชีนี้ยังไม่ได้รับสิทธิ์แอดมิน<br><br>ให้นำ User ID นี้ไปใส่ใน Script Property <code>ADMIN_USER_IDS</code>:<br><br><code>${esc(probe.userId)}</code>`
+          : `<span class="error">${esc(probe.error)}</span>`;
+        return;
+      }
+      config = await configP;
+      $('wService').innerHTML = config.services.map(s => `<option>${esc(s.name)}</option>`).join('');
+      $('wStylist').innerHTML = [config.anyStylist, ...config.stylists.map(s => s.name)].map(n => `<option>${esc(n)}</option>`).join('');
+      $('today').textContent = thDate(new Date());
+      const profile = await liff.getProfile();
+      $('me').textContent = `เข้าสู่ระบบ: ${profile.displayName}`;
+      $('gate').hidden = true; $('app').hidden = false;
+      await loadQueue();
+      setInterval(() => { if (!document.querySelector('[data-page=queue]').hidden) loadQueue().catch(() => {}); }, 15000);
+    } catch (err) {
+      $('gateMsg').innerHTML = `<span class="error">เปิดหน้าไม่สำเร็จ: ${esc(err.message)}</span>`;
+    }
+  })();
+</script>
+</body>
+</html>

@@ -88,6 +88,7 @@ function doPost(e) {
     const userId = verifyIdToken_(body.idToken);
     if (body.action === 'status') return json_(statusOf_(userId));
     if (body.action === 'join') return json_(join_(userId, body));
+    if (String(body.action).startsWith('admin_')) return json_(admin_(userId, body));
     return json_({ ok: false, error: 'unknown action' });
   } catch (err) {
     return json_({ ok: false, error: String(err.message || err) });
@@ -178,8 +179,11 @@ function onStatusEdit(e) {
   if (sh.getName() !== SHEET_NAME || range.getColumn() !== COL.STATUS || range.getRow() < 2) return;
   if (range.getNumRows() !== 1) return;
 
-  const row = range.getRow();
-  const status = range.getValue();
+  applyStatus_(sh, range.getRow(), range.getValue());
+}
+
+/** ประทับเวลา + ส่ง Push ตามสถานะใหม่ (ใช้ทั้งตอนแก้ใน Sheets และตอนกดในหน้าแอดมิน) */
+function applyStatus_(sh, row, status) {
   const now = new Date();
   const stamp = col => { if (!sh.getRange(row, col).getValue()) sh.getRange(row, col).setValue(now); };
 
@@ -199,6 +203,65 @@ function onStatusEdit(e) {
   }
 }
 
+// ---------- Admin portal ----------
+// Script Property ADMIN_USER_IDS = LINE User ID ของแอดมิน คั่นด้วย , (ดูได้จากข้อความ error ตอนเข้าครั้งแรก)
+
+function admin_(userId, body) {
+  const admins = (PropertiesService.getScriptProperties().getProperty('ADMIN_USER_IDS') || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  if (!admins.includes(userId)) return { ok: false, error: 'NOT_ADMIN', userId };
+
+  const sh = sheet_();
+  if (body.action === 'admin_queue') {
+    return { ok: true, rows: todayRows_().map(publicRow_), statuses: Object.values(STATUS) };
+  }
+  if (body.action === 'admin_set_status') {
+    const row = Number(body.row);
+    if (!Object.values(STATUS).includes(body.status) || row < 2 || row > sh.getLastRow()) throw new Error('ข้อมูลไม่ถูกต้อง');
+    sh.getRange(row, COL.STATUS).setValue(body.status); // เขียนด้วยสคริปต์ onEdit ไม่ทำงาน จึงเรียกเอง
+    applyStatus_(sh, row, body.status);
+    return { ok: true };
+  }
+  if (body.action === 'admin_walkin') {
+    const service = SERVICES.find(s => s.name === body.service);
+    const name = String(body.name || '').trim().slice(0, 50);
+    if (!name || !service) throw new Error('กรุณากรอกชื่อและเลือกบริการ');
+    const stylist = [ANY_STYLIST, ...STYLISTS.map(s => s.name)].includes(body.stylist) ? body.stylist : ANY_STYLIST;
+    const lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+      sh.appendRow([new Date(), todayRows_().length + 1, name, service.name, STATUS.WAITING, '',
+        '', '', '', 'Walk-in', '', stylist, String(body.note || '').slice(0, 200), '']);
+    } finally {
+      lock.releaseLock();
+    }
+    return { ok: true };
+  }
+  if (body.action === 'admin_report') {
+    const re = /^\d{4}-\d{2}-\d{2}$/;
+    if (!re.test(body.from) || !re.test(body.to)) throw new Error('ช่วงวันที่ไม่ถูกต้อง');
+    const rows = allRows_().filter(r => {
+      if (!(r.ts instanceof Date)) return false;
+      const d = Utilities.formatDate(r.ts, TZ, 'yyyy-MM-dd');
+      return d >= body.from && d <= body.to;
+    });
+    return { ok: true, rows: rows.map(publicRow_), services: SERVICES, stylists: STYLISTS.map(s => s.name) };
+  }
+  throw new Error('unknown admin action');
+}
+
+/** แถวสำหรับหน้าแอดมิน (ไม่ส่ง LINE User ID ออกไป) */
+function publicRow_(r) {
+  const v = r.v;
+  const iso = x => (x instanceof Date ? x.toISOString() : '');
+  return {
+    row: r.row, ts: iso(v[COL.TS - 1]), no: v[COL.NO - 1], name: v[COL.NAME - 1], service: v[COL.SERVICE - 1],
+    status: v[COL.STATUS - 1], called: iso(v[COL.CALLED - 1]), started: iso(v[COL.STARTED - 1]),
+    finished: iso(v[COL.FINISHED - 1]), channel: v[COL.CHANNEL - 1], phone: String(v[COL.PHONE - 1] || ''),
+    stylist: v[COL.STYLIST - 1], note: v[COL.NOTE - 1], visit: v[COL.VISIT - 1], line: Boolean(v[COL.UID - 1]),
+  };
+}
+
 // ---------- helpers ----------
 
 function sheet_() {
@@ -211,7 +274,7 @@ function allRows_() {
   if (last < 2) return [];
   return sh.getRange(2, 1, last - 1, HEADERS.length).getValues().map((v, i) => ({
     row: i + 2, ts: v[COL.TS - 1], no: v[COL.NO - 1], name: v[COL.NAME - 1], service: v[COL.SERVICE - 1],
-    status: v[COL.STATUS - 1], uid: v[COL.UID - 1], stylist: v[COL.STYLIST - 1], visit: v[COL.VISIT - 1],
+    status: v[COL.STATUS - 1], uid: v[COL.UID - 1], stylist: v[COL.STYLIST - 1], visit: v[COL.VISIT - 1], v,
   }));
 }
 
