@@ -3,99 +3,192 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ลงคิว Million Hair</title>
+<title>Million Hair</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --navy: #14294A; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C;
+    --navy: #14294A; --teal: #17736B; --teal-soft: #E2F2EF; --orange: #C2410C; --gold: #F4A259;
     --bg: #F4F6F3; --card: #FCFDFB; --line: #DDE3DF; --text: #14294A; --muted: #4A5568;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Sarabun', Tahoma, sans-serif; font-size: 17px; }
-  header { background: var(--navy); color: #F4F6F3; padding: 28px 20px 24px; }
-  header p { margin: 0; color: #F4A259; font-family: 'Prompt', sans-serif; font-size: 13px; letter-spacing: 2px; }
-  header h1 { margin: 6px 0 0; font-family: 'Prompt', sans-serif; font-size: 26px; font-weight: 600; }
+  header { background: var(--navy); color: #F4F6F3; padding: 24px 20px 0; }
+  header p { margin: 0; color: var(--gold); font-family: 'Prompt', sans-serif; font-size: 13px; letter-spacing: 3px; }
+  header h1 { margin: 4px 0 2px; font-family: 'Prompt', sans-serif; font-size: 26px; font-weight: 600; }
   header small { color: #BFD0E0; }
+  nav { display: flex; gap: 4px; overflow-x: auto; margin: 16px -20px 0; padding: 0 16px; scrollbar-width: none; }
+  nav button { flex: none; width: auto; background: none; border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+    color: #BFD0E0; font: 500 15px 'Prompt', sans-serif; padding: 10px 10px 12px; }
+  nav button.on { color: #F4F6F3; border-bottom-color: var(--gold); }
   main { padding: 20px 16px 40px; max-width: 480px; margin: 0 auto; }
+  h2 { font-family: 'Prompt', sans-serif; font-size: 20px; margin: 0 0 12px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
-  label.field { display: block; font-weight: 600; margin-bottom: 8px; }
-  input[type=text] { width: 100%; padding: 12px 14px; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-  .services { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .services label { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; background: #fff; }
-  .services input { display: none; }
-  .services label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
-  .services b { display: block; }
-  .services span { color: var(--muted); font-size: 14px; }
-  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted); }
-  .consent input { margin-top: 4px; width: 18px; height: 18px; }
+  .field { display: block; font-weight: 600; margin: 18px 0 8px; }
+  .field:first-child { margin-top: 0; }
+  .field small { font-weight: 400; color: var(--muted); }
+  input[type=text], input[type=tel], textarea { width: 100%; padding: 12px 14px; font: inherit; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  textarea { resize: vertical; min-height: 64px; }
+  .choices { display: grid; gap: 8px; }
+  .choices label { display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; cursor: pointer; background: #fff; }
+  .choices input { display: none; }
+  .choices label:has(input:checked) { border-color: var(--teal); background: var(--teal-soft); }
+  .choices b { display: block; }
+  .choices span { color: var(--muted); font-size: 14px; }
+  .choices .price { color: var(--teal); font-weight: 600; white-space: nowrap; }
+  .consent { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted); margin: 18px 0; }
+  .consent input { margin-top: 4px; width: 18px; height: 18px; flex: none; }
   button { width: 100%; padding: 14px; font: 600 18px 'Prompt', sans-serif; border: 0; border-radius: 12px; background: var(--teal); color: #F4F6F3; cursor: pointer; }
   button.secondary { background: transparent; color: var(--teal); border: 1.5px solid var(--teal); margin-top: 10px; }
   button:disabled { opacity: .5; }
   .ticket { text-align: center; }
   .ticket .label { color: var(--muted); margin: 0; }
-  .ticket .no { font-family: 'Prompt', sans-serif; font-size: 72px; font-weight: 600; color: var(--navy); margin: 4px 0 12px; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .ticket .no { font-family: 'Prompt', sans-serif; font-size: 72px; font-weight: 600; color: var(--navy); margin: 4px 0 8px; line-height: 1; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0 12px; }
   .stats div { background: var(--teal-soft); border-radius: 12px; padding: 12px; }
   .stats b { display: block; font-family: 'Prompt', sans-serif; font-size: 26px; color: var(--teal); }
+  .detail { text-align: left; border-top: 1px dashed var(--line); padding-top: 12px; margin-top: 4px; }
+  .detail p { display: flex; justify-content: space-between; margin: 6px 0; }
+  .detail span { color: var(--muted); }
   .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--navy); color: #F4F6F3; font-size: 14px; }
   .pill.near { background: var(--orange); }
   .note { color: var(--muted); font-size: 15px; }
   .error { color: var(--orange); font-weight: 600; }
+  .list .row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .list .row:last-child { border-bottom: 0; }
+  .list .row span { color: var(--muted); font-size: 14px; display: block; }
+  .list .row .price { color: var(--teal); font-weight: 600; white-space: nowrap; }
+  .stylist { display: flex; gap: 14px; align-items: center; padding: 10px 0; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--navy); color: var(--gold);
+    display: grid; place-items: center; font: 600 22px 'Prompt', sans-serif; flex: none; }
+  .bars { display: grid; gap: 8px; }
+  .bar { display: grid; grid-template-columns: 52px 1fr 64px; gap: 10px; align-items: center; font-size: 15px; }
+  .bar i { display: block; height: 14px; border-radius: 7px; background: var(--teal); min-width: 4px; }
+  .bar.peak i { background: var(--orange); }
+  .bar em { font-style: normal; color: var(--muted); font-size: 13px; text-align: right; }
+  .legend { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .fake { font-size: 13px; color: var(--muted); text-align: center; margin-top: 24px; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <header>
   <p>MILLION HAIR</p>
-  <h1>ลงคิวออนไลน์</h1>
-  <small>หนึ่งในล้าน ไม่ต้องรอ</small>
+  <h1 id="shopName">Million Hair</h1>
+  <small id="tagline">หนึ่งในล้าน ไม่ต้องรอ</small>
+  <nav id="nav">
+    <button data-page="queue" class="on">ลงคิว</button>
+    <button data-page="services">บริการ & ราคา</button>
+    <button data-page="team">ทีมช่าง</button>
+    <button data-page="busy">ช่วงคนน้อย</button>
+    <button data-page="about">ข้อมูลร้าน</button>
+  </nav>
 </header>
 <main>
   <div id="loading" class="card note">กำลังโหลด…</div>
+  <p id="fatal" class="card error" hidden></p>
 
-  <form id="form" class="card" hidden>
-    <label class="field" for="name">ชื่อที่ให้ร้านเรียก</label>
-    <input id="name" type="text" maxlength="50" required>
-    <p class="field" style="font-weight:600;margin:20px 0 8px">เลือกบริการ</p>
-    <div class="services" id="services"></div>
-    <p></p>
-    <label class="consent">
-      <input id="consent" type="checkbox">
-      <span>ยินยอมให้ร้านเก็บชื่อและ LINE User ID เพื่อใช้จัดคิวและแจ้งเตือนเท่านั้น</span>
-    </label>
-    <p id="formError" class="error" hidden></p>
-    <button id="submit" type="submit">ยืนยันลงคิว</button>
-  </form>
+  <!-- ลงคิว -->
+  <section data-view="queue" hidden>
+    <form id="form" class="card" hidden>
+      <h2>ลงคิวออนไลน์</h2>
+      <label class="field" for="name">ชื่อที่ให้ร้านเรียก</label>
+      <input id="name" type="text" maxlength="50" required autocomplete="nickname">
 
-  <section id="ticket" class="card ticket" hidden>
-    <p class="label">คิวของคุณ</p>
-    <p class="no" id="tNo">–</p>
-    <p><span class="pill" id="tStatus">รอคิว</span></p>
-    <div class="stats">
-      <div><b id="tAhead">–</b>คิวก่อนหน้า</div>
-      <div><b id="tWait">–</b>นาทีโดยประมาณ</div>
+      <label class="field" for="phone">เบอร์โทร <small>(ไม่บังคับ ใช้ติดต่อเมื่อเรียกคิวแล้วไม่พบ)</small></label>
+      <input id="phone" type="tel" inputmode="numeric" maxlength="12" placeholder="08xxxxxxxx" autocomplete="tel">
+
+      <p class="field">เลือกบริการ</p>
+      <div class="choices" id="serviceChoices"></div>
+
+      <p class="field">ช่างที่ต้องการ</p>
+      <div class="choices" id="stylistChoices"></div>
+
+      <label class="field" for="note">หมายเหตุถึงช่าง <small>(ไม่บังคับ)</small></label>
+      <textarea id="note" maxlength="200" placeholder="เช่น ผมยาวมาก, หนังศีรษะแพ้ง่าย, อยากได้ทรงตามรูป"></textarea>
+
+      <label class="consent">
+        <input id="consent" type="checkbox">
+        <span>ยินยอมให้ร้านเก็บชื่อ เบอร์โทร และ LINE User ID เพื่อใช้จัดคิวและแจ้งเตือนเท่านั้น</span>
+      </label>
+      <p id="formError" class="error" hidden></p>
+      <button id="submit" type="submit">ยืนยันลงคิว</button>
+    </form>
+
+    <div id="ticket" class="card ticket" hidden>
+      <p class="label" id="tGreet">คิวของคุณ</p>
+      <p class="no" id="tNo">–</p>
+      <p><span class="pill" id="tStatus">รอคิว</span></p>
+      <div class="stats">
+        <div><b id="tAhead">–</b>คิวก่อนหน้า</div>
+        <div><b id="tWait">–</b>นาทีโดยประมาณ</div>
+      </div>
+      <div class="detail">
+        <p><span>บริการ</span><b id="tService">–</b></p>
+        <p><span>ช่าง</span><b id="tStylist">–</b></p>
+        <p><span>ราคาโดยประมาณ</span><b id="tPrice">–</b></p>
+      </div>
+      <p class="note" id="tNote"></p>
+      <button class="secondary" id="refresh" type="button">อัปเดตสถานะ</button>
     </div>
-    <p class="note" id="tNote">ไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความไปทาง LINE</p>
-    <button class="secondary" id="refresh" type="button">อัปเดตสถานะ</button>
   </section>
 
-  <p id="fatal" class="card error" hidden></p>
+  <!-- บริการ -->
+  <section data-view="services" hidden>
+    <div class="card">
+      <h2>บริการ & ราคา</h2>
+      <div class="list" id="serviceList"></div>
+      <p class="legend">ราคาอาจเปลี่ยนตามความยาวและปริมาณผม ช่างจะแจ้งก่อนเริ่มบริการ</p>
+    </div>
+  </section>
+
+  <!-- ทีมช่าง -->
+  <section data-view="team" hidden>
+    <div class="card">
+      <h2>ทีมช่าง</h2>
+      <div id="teamList"></div>
+    </div>
+  </section>
+
+  <!-- ช่วงคนน้อย -->
+  <section data-view="busy" hidden>
+    <div class="card">
+      <h2>ช่วงเวลาที่คนน้อย</h2>
+      <p class="note" id="busyNote">กำลังโหลด…</p>
+      <div class="bars" id="busyBars"></div>
+      <p class="legend">คำนวณจากจำนวนคิวจริงย้อนหลัง 28 วัน · สีส้ม = ช่วงคนแน่น</p>
+    </div>
+  </section>
+
+  <!-- ข้อมูลร้าน -->
+  <section data-view="about" hidden>
+    <div class="card list">
+      <h2>ข้อมูลร้าน</h2>
+      <div class="row"><div><b>เวลาทำการ</b><span id="aHours"></span></div></div>
+      <div class="row"><div><b>ที่ตั้ง</b><span id="aAddress"></span></div></div>
+      <div class="row"><div><b>โทร</b><span id="aPhone"></span></div></div>
+      <div class="row"><div><b>ลงคิวอย่างไร</b><span>กดลงคิวผ่าน LINE แล้วไปทำธุระได้เลย ใกล้ถึงคิวเราจะส่งข้อความแจ้ง กรุณากลับมาภายใน 10 นาที</span></div></div>
+    </div>
+  </section>
+
+  <p class="fake">ร้านสมมติสำหรับโครงงาน Digital Transformation</p>
 </main>
 
 <script src="https://static.line-scdn.net/liff/edge/versions/2.31.1/sdk.js"></script>
 <script>
   const LIFF_ID = '2012052973-UNW6H5DF';
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwUoglZ50ihRFCStUUMg2wFObIsXaHyO7RnRKB213QdM2DQrdGns7QlKZP7gtoDj5H8/exec';
-  const SERVICES = [
-    ['ตัดผม', '~30 นาที'],
-    ['สระ-ไดร์', '~30 นาที'],
-    ['ตัด + สระ-ไดร์', '~45 นาที'],
-    ['ทำสี', '~90 นาที'],
-  ];
 
   const $ = id => document.getElementById(id);
-  const show = (id, on = true) => { $(id).hidden = !on; };
+  const show = (el, on = true) => { (typeof el === 'string' ? $(el) : el).hidden = !on; };
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let config = null;
+
+  async function getJSON(action) {
+    const res = await fetch(`${GAS_URL}?action=${action}`);
+    return res.json();
+  }
 
   async function api(payload) {
     const res = await fetch(GAS_URL, {
@@ -108,13 +201,65 @@
     return data;
   }
 
+  // ---------- navigation ----------
+  const loaded = {};
+  function go(page) {
+    if (!document.querySelector(`[data-view="${page}"]`)) page = 'queue';
+    document.querySelectorAll('[data-view]').forEach(v => show(v, v.dataset.view === page));
+    document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.page === page));
+    if (page === 'busy' && !loaded.busy) { loaded.busy = true; loadBusy(); }
+  }
+  $('nav').addEventListener('click', e => { if (e.target.dataset.page) go(e.target.dataset.page); });
+
+  // ---------- static pages from config ----------
+  function renderConfig() {
+    const { shop, services, stylists, anyStylist } = config;
+    $('shopName').textContent = shop.name;
+    $('tagline').textContent = shop.tagline;
+    $('serviceList').innerHTML = services.map(s =>
+      `<div class="row"><div><b>${esc(s.name)}</b><span>ประมาณ ${s.min} นาที</span></div><div class="price">฿${esc(s.price)}</div></div>`).join('');
+    $('teamList').innerHTML = stylists.map(s =>
+      `<div class="stylist"><div class="avatar">${esc(s.name.replace('ช่าง', '').slice(0, 1))}</div><div><b>${esc(s.name)}</b><br><span class="note">${esc(s.skill)}</span></div></div>`).join('');
+    $('aHours').textContent = shop.hours;
+    $('aAddress').textContent = shop.address;
+    $('aPhone').textContent = shop.phone;
+
+    $('serviceChoices').innerHTML = services.map((s, i) =>
+      `<label><input type="radio" name="service" value="${esc(s.name)}" ${i === 0 ? 'checked' : ''}>
+       <div><b>${esc(s.name)}</b><span>~${s.min} นาที</span></div><div class="price">฿${esc(s.price)}</div></label>`).join('');
+    $('stylistChoices').innerHTML = [{ name: anyStylist, skill: 'ช่างคนแรกที่ว่าง' }, ...stylists].map((s, i) =>
+      `<label><input type="radio" name="stylist" value="${esc(s.name)}" ${i === 0 ? 'checked' : ''}>
+       <div><b>${esc(s.name)}</b><span>${esc(s.skill)}</span></div></label>`).join('');
+  }
+
+  async function loadBusy() {
+    try {
+      const d = await getJSON('busy');
+      if (!d.days) { $('busyNote').textContent = 'ยังมีข้อมูลไม่พอ ระบบจะแสดงเมื่อมีคิวสะสมแล้ว'; return; }
+      const max = Math.max(...d.hours.map(h => h.avg), 0.01);
+      const sorted = [...d.hours].sort((a, b) => b.avg - a.avg);
+      const peak = new Set(sorted.slice(0, 3).filter(h => h.avg > 0).map(h => h.hour));
+      const quiet = [...d.hours].sort((a, b) => a.avg - b.avg)[0];
+      $('busyNote').textContent = `แนะนำช่วง ${quiet.hour}:00–${quiet.hour + 1}:00 น. คนน้อยที่สุด (ข้อมูล ${d.days} วัน)`;
+      $('busyBars').innerHTML = d.hours.map(h =>
+        `<div class="bar ${peak.has(h.hour) ? 'peak' : ''}"><span>${h.hour}:00</span><i style="width:${(h.avg / max) * 100}%"></i><em>${h.avg.toFixed(1)} คิว${peak.has(h.hour) ? ' · แน่น' : ''}</em></div>`).join('');
+    } catch (e) {
+      $('busyNote').textContent = 'โหลดข้อมูลไม่สำเร็จ';
+    }
+  }
+
+  // ---------- queue ----------
   function renderTicket(s) {
-    show('loading', false); show('form', false); show('ticket');
+    show('form', false); show('ticket');
+    $('tGreet').textContent = s.visitNo > 1 ? `ยินดีต้อนรับกลับ คุณ${s.name} · ครั้งที่ ${s.visitNo}` : `คิวของคุณ${s.name}`;
     $('tNo').textContent = s.queueNo;
     $('tStatus').textContent = s.status;
     $('tStatus').className = 'pill' + (s.status === 'ใกล้ถึงคิว' ? ' near' : '');
     $('tAhead').textContent = s.ahead;
     $('tWait').textContent = s.waitMin;
+    $('tService').textContent = s.service;
+    $('tStylist').textContent = s.stylist || '–';
+    $('tPrice').textContent = s.price ? `฿${s.price}` : '–';
     $('tNote').textContent = s.status === 'ใกล้ถึงคิว'
       ? 'ใกล้ถึงคิวแล้ว กรุณากลับมาที่ร้านภายใน 10 นาที'
       : s.status === 'รับบริการ' ? 'กำลังให้บริการ ขอบคุณที่ใช้บริการค่ะ'
@@ -127,47 +272,50 @@
     else { show('ticket', false); show('form'); }
   }
 
-  function renderForm(profile) {
-    $('name').value = profile.displayName || '';
-    $('services').innerHTML = SERVICES.map(([name, time], i) =>
-      `<label><input type="radio" name="service" value="${name}" ${i === 0 ? 'checked' : ''}><b>${name}</b><span>${time}</span></label>`
-    ).join('');
-    $('form').addEventListener('submit', async ev => {
-      ev.preventDefault();
-      show('formError', false);
-      if (!$('consent').checked) { $('formError').textContent = 'กรุณากดยินยอมก่อนลงคิว'; show('formError'); return; }
-      $('submit').disabled = true;
-      try {
-        renderTicket(await api({
-          action: 'join',
-          name: $('name').value,
-          service: document.querySelector('input[name=service]:checked').value,
-          consent: true,
-        }));
-      } catch (err) {
-        $('formError').textContent = err.message; show('formError');
-      } finally {
-        $('submit').disabled = false;
-      }
-    });
-  }
+  $('form').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    show('formError', false);
+    if (!$('consent').checked) { $('formError').textContent = 'กรุณากดยินยอมก่อนลงคิว'; show('formError'); return; }
+    $('submit').disabled = true;
+    try {
+      renderTicket(await api({
+        action: 'join',
+        name: $('name').value,
+        phone: $('phone').value,
+        service: document.querySelector('input[name=service]:checked').value,
+        stylist: document.querySelector('input[name=stylist]:checked').value,
+        note: $('note').value,
+        consent: true,
+      }));
+    } catch (err) {
+      $('formError').textContent = err.message; show('formError');
+    } finally {
+      $('submit').disabled = false;
+    }
+  });
+  $('refresh').addEventListener('click', () => refresh().catch(e => alert(e.message)));
 
   (async () => {
     try {
+      const configP = getJSON('config');
       await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) { liff.login(); return; }
-      renderForm(await liff.getProfile());
+      if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+      config = await configP;
+      renderConfig();
+      go(new URLSearchParams(location.search).get('page') || 'queue');
+      const profile = await liff.getProfile();
+      $('name').value = profile.displayName || '';
       await refresh();
-      $('refresh').addEventListener('click', () => refresh().catch(e => alert(e.message)));
+      show('loading', false);
       setInterval(() => { if (!$('ticket').hidden) refresh().catch(() => {}); }, 30000);
     } catch (err) {
       // เปิดนอกแอป LINE แล้ว ID token เก่าหมดอายุ: ล็อกอินใหม่ 1 ครั้ง
       if (!liff.isInClient() && /หมดอายุ/.test(err.message) && !sessionStorage.getItem('relogin')) {
         sessionStorage.setItem('relogin', '1');
-        liff.logout(); liff.login(); return;
+        liff.logout(); liff.login({ redirectUri: location.href }); return;
       }
       show('loading', false);
-      $('fatal').textContent = 'เปิดหน้าลงคิวไม่สำเร็จ: ' + err.message;
+      $('fatal').textContent = 'เปิดหน้าไม่สำเร็จ: ' + err.message;
       show('fatal');
     }
   })();

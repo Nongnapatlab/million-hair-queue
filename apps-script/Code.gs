@@ -5,17 +5,35 @@
  *   LINE_TOKEN        Channel access token (long-lived) ของ Messaging API channel
  *   LOGIN_CHANNEL_ID  Channel ID ของ LINE Login channel (MillionHair Queue App)
  *
- * ครั้งแรก: รัน setup() 1 ครั้งจาก editor (สร้างหัวตาราง, Dropdown, trigger)
+ * ครั้งแรก หรือหลังเพิ่มคอลัมน์: รัน setup() 1 ครั้งจาก editor (หัวตาราง, Dropdown, trigger)
  */
 
 const SHEET_NAME = 'Queue';
-const CHAIRS = 2;
-const SERVICES = { // นาทีโดยประมาณต่อบริการ ใช้คำนวณเวลารอ
-  'ตัดผม': 30,
-  'สระ-ไดร์': 30,
-  'ตัด + สระ-ไดร์': 45,
-  'ทำสี': 90,
+const TZ = 'Asia/Bangkok';
+
+// ข้อมูลร้าน (ร้านสมมติสำหรับโครงงาน) — หน้า LIFF ดึงจากตรงนี้ จึงแก้ที่เดียว
+const SHOP = {
+  name: 'Million Hair',
+  tagline: 'หนึ่งในล้าน ไม่ต้องรอ',
+  hours: 'เปิดทุกวัน 10:00–20:00 น. (หยุดวันพุธ)',
+  address: '[ที่อยู่ร้านสมมติ]',
+  phone: '[เบอร์ร้านสมมติ]',
 };
+const SERVICES = [ // name, นาทีโดยประมาณ (ใช้คำนวณเวลารอ), ราคา
+  { name: 'ตัดผมสั้น', min: 30, price: '150' },
+  { name: 'ตัดผมยาว', min: 45, price: '200' },
+  { name: 'สระ-ไดร์', min: 30, price: '150' },
+  { name: 'ตัด + สระ-ไดร์', min: 60, price: '300' },
+  { name: 'ทรีตเมนต์บำรุงผม', min: 45, price: '350' },
+  { name: 'ทำสีผม', min: 120, price: 'เริ่มต้น 900' },
+  { name: 'ดัด / ยืดผม', min: 150, price: 'เริ่มต้น 1,200' },
+];
+const ANY_STYLIST = 'ไม่ระบุ (คิวเร็วที่สุด)';
+const STYLISTS = [
+  { name: 'ช่างมิน', skill: 'ตัดทรงเกาหลี · ผมสั้น' },
+  { name: 'ช่างแนท', skill: 'ทำสี · ดัด · ยืด' },
+];
+
 const STATUS = {
   WAITING: 'รอคิว',
   NEAR: 'ใกล้ถึงคิว',
@@ -24,9 +42,12 @@ const STATUS = {
   NO_SHOW: 'ไม่มา',
 };
 const HEADERS = ['Timestamp', 'Queue No', 'Name', 'Service', 'Status', 'LINE User ID',
-  'Called At', 'Started At', 'Finished At', 'Channel'];
-const COL = { TS: 1, NO: 2, NAME: 3, SERVICE: 4, STATUS: 5, UID: 6, CALLED: 7, STARTED: 8, FINISHED: 9, CHANNEL: 10 };
-const TZ = 'Asia/Bangkok';
+  'Called At', 'Started At', 'Finished At', 'Channel', 'Phone', 'Stylist', 'Note', 'Visit No'];
+const COL = {
+  TS: 1, NO: 2, NAME: 3, SERVICE: 4, STATUS: 5, UID: 6, CALLED: 7, STARTED: 8, FINISHED: 9,
+  CHANNEL: 10, PHONE: 11, STYLIST: 12, NOTE: 13, VISIT: 14,
+};
+const ACTIVE = [STATUS.WAITING, STATUS.NEAR];
 
 // ---------- setup ----------
 
@@ -37,14 +58,12 @@ function setup() {
   sh.setFrozenRows(1);
   sh.hideColumns(COL.UID);
 
-  const statusRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(Object.values(STATUS), true).setAllowInvalid(false).build();
-  sh.getRange(2, COL.STATUS, sh.getMaxRows() - 1, 1).setDataValidation(statusRule);
-  const channelRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(['LINE', 'Walk-in'], true).build();
-  sh.getRange(2, COL.CHANNEL, sh.getMaxRows() - 1, 1).setDataValidation(channelRule);
-  sh.getRange(2, COL.SERVICE, sh.getMaxRows() - 1, 1).setDataValidation(
-    SpreadsheetApp.newDataValidation().requireValueInList(Object.keys(SERVICES), true).build());
+  const n = sh.getMaxRows() - 1;
+  const list = values => SpreadsheetApp.newDataValidation().requireValueInList(values, true).build();
+  sh.getRange(2, COL.STATUS, n, 1).setDataValidation(list(Object.values(STATUS)));
+  sh.getRange(2, COL.SERVICE, n, 1).setDataValidation(list(SERVICES.map(s => s.name)));
+  sh.getRange(2, COL.CHANNEL, n, 1).setDataValidation(list(['LINE', 'Walk-in']));
+  sh.getRange(2, COL.STYLIST, n, 1).setDataValidation(list([ANY_STYLIST, ...STYLISTS.map(s => s.name)]));
 
   ScriptApp.getProjectTriggers()
     .filter(t => t.getHandlerFunction() === 'onStatusEdit')
@@ -52,11 +71,14 @@ function setup() {
   ScriptApp.newTrigger('onStatusEdit').forSpreadsheet(ss).onEdit().create();
 }
 
-// ---------- Web App (LIFF → Sheets) ----------
+// ---------- Web App (LIFF ↔ Sheets) ----------
 
 function doGet(e) {
   const action = (e.parameter.action || '').toLowerCase();
-  if (action === 'services') return json_({ ok: true, services: Object.keys(SERVICES) });
+  if (action === 'config') {
+    return json_({ ok: true, shop: SHOP, services: SERVICES, stylists: STYLISTS, anyStylist: ANY_STYLIST });
+  }
+  if (action === 'busy') return json_(busyHours_());
   return json_({ ok: true, app: 'Million Hair Queue' });
 }
 
@@ -74,9 +96,13 @@ function doPost(e) {
 
 function join_(userId, body) {
   const name = String(body.name || '').trim().slice(0, 50);
-  const service = String(body.service || '');
+  const service = SERVICES.find(s => s.name === body.service);
+  const stylist = [ANY_STYLIST, ...STYLISTS.map(s => s.name)].includes(body.stylist) ? body.stylist : ANY_STYLIST;
+  const phone = String(body.phone || '').replace(/\D/g, '');
+  const note = String(body.note || '').trim().slice(0, 200);
   if (!name) throw new Error('กรุณากรอกชื่อ');
-  if (!SERVICES[service]) throw new Error('บริการไม่ถูกต้อง');
+  if (!service) throw new Error('กรุณาเลือกบริการ');
+  if (phone && !/^0\d{8,9}$/.test(phone)) throw new Error('เบอร์โทรไม่ถูกต้อง');
   if (body.consent !== true) throw new Error('ต้องยินยอมให้เก็บข้อมูลก่อนลงคิว');
 
   const lock = LockService.getScriptLock();
@@ -85,10 +111,11 @@ function join_(userId, body) {
     const existing = statusOf_(userId);
     if (existing.inQueue) return existing; // กันลงคิวซ้ำ
 
-    const sh = sheet_();
-    const now = new Date();
     const queueNo = todayRows_().length + 1;
-    sh.appendRow([now, queueNo, name, service, STATUS.WAITING, userId, '', '', '', 'LINE']);
+    const visitNo = allRows_().filter(r => r.uid === userId).length + 1;
+    // ใส่ ' นำหน้าเบอร์ ไม่ให้ Sheets ตัดเลข 0 ข้างหน้า
+    sheet_().appendRow([new Date(), queueNo, name, service.name, STATUS.WAITING, userId,
+      '', '', '', 'LINE', phone ? "'" + phone : '', stylist, note, visitNo]);
   } finally {
     lock.releaseLock();
   }
@@ -98,21 +125,49 @@ function join_(userId, body) {
 /** สถานะคิวของ user วันนี้ + จำนวนคิวก่อนหน้า + เวลารอโดยประมาณ (นาที) */
 function statusOf_(userId) {
   const rows = todayRows_();
-  const active = [STATUS.WAITING, STATUS.NEAR];
-  const mine = rows.find(r => r.uid === userId && (active.includes(r.status) || r.status === STATUS.SERVING));
+  const mine = rows.find(r => r.uid === userId && (ACTIVE.includes(r.status) || r.status === STATUS.SERVING));
   if (!mine) return { ok: true, inQueue: false };
 
-  if (mine.status === STATUS.SERVING) {
-    return { ok: true, inQueue: true, queueNo: mine.no, status: mine.status, ahead: 0, waitMin: 0 };
-  }
-  const ahead = rows.filter(r => r.row < mine.row && active.includes(r.status));
-  const serving = rows.filter(r => r.status === STATUS.SERVING);
-  const minutes = ahead.reduce((s, r) => s + (SERVICES[r.service] || 30), 0)
-    + serving.reduce((s, r) => s + (SERVICES[r.service] || 30) / 2, 0); // คนที่กำลังทำ คิดว่าเหลือครึ่งเวลา
-  return {
-    ok: true, inQueue: true, queueNo: mine.no, status: mine.status,
-    ahead: ahead.length, waitMin: Math.round(minutes / CHAIRS),
+  const base = {
+    ok: true, inQueue: true, queueNo: mine.no, status: mine.status, name: mine.name,
+    service: mine.service, stylist: mine.stylist, visitNo: mine.visit,
+    price: (SERVICES.find(s => s.name === mine.service) || {}).price || '',
   };
+  if (mine.status === STATUS.SERVING) return { ...base, ahead: 0, waitMin: 0 };
+
+  const minutesOf = r => (SERVICES.find(s => s.name === r.service) || { min: 30 }).min;
+  const before = rows.filter(r => r.row < mine.row);
+  const ahead = before.filter(r => ACTIVE.includes(r.status));
+  const serving = rows.filter(r => r.status === STATUS.SERVING);
+
+  let minutes;
+  if (mine.stylist && mine.stylist !== ANY_STYLIST) {
+    // รอเฉพาะคิวของช่างคนนี้ + ครึ่งหนึ่งของคิวที่ไม่ระบุช่าง
+    const same = r => r.stylist === mine.stylist;
+    const any = r => !r.stylist || r.stylist === ANY_STYLIST;
+    minutes = ahead.filter(same).reduce((s, r) => s + minutesOf(r), 0)
+      + ahead.filter(any).reduce((s, r) => s + minutesOf(r), 0) / 2
+      + serving.filter(same).reduce((s, r) => s + minutesOf(r) / 2, 0);
+  } else {
+    minutes = (ahead.reduce((s, r) => s + minutesOf(r), 0)
+      + serving.reduce((s, r) => s + minutesOf(r) / 2, 0)) / STYLISTS.length;
+  }
+  return { ...base, ahead: ahead.length, waitMin: Math.round(minutes) };
+}
+
+/** จำนวนคิวเฉลี่ยรายชั่วโมงย้อนหลัง 28 วัน (ไม่มีข้อมูลส่วนบุคคล) */
+function busyHours_() {
+  const since = Date.now() - 28 * 24 * 3600 * 1000;
+  const rows = allRows_().filter(r => r.ts instanceof Date && r.ts.getTime() >= since);
+  const days = new Set(rows.map(r => Utilities.formatDate(r.ts, TZ, 'yyyy-MM-dd'))).size;
+  const counts = {};
+  for (let h = 10; h < 20; h++) counts[h] = 0;
+  rows.forEach(r => {
+    const h = Number(Utilities.formatDate(r.ts, TZ, 'H'));
+    if (h in counts) counts[h]++;
+  });
+  const hours = Object.keys(counts).map(h => ({ hour: Number(h), avg: days ? counts[h] / days : 0 }));
+  return { ok: true, days, hours };
 }
 
 // ---------- Staff edits status → stamp time + push ----------
@@ -130,13 +185,11 @@ function onStatusEdit(e) {
 
   if (status === STATUS.NEAR) {
     stamp(COL.CALLED);
-    const [no, name, uid] = [
-      sh.getRange(row, COL.NO).getValue(),
-      sh.getRange(row, COL.NAME).getValue(),
-      sh.getRange(row, COL.UID).getValue(),
-    ];
+    const v = sh.getRange(row, 1, 1, HEADERS.length).getValues()[0];
+    const [no, name, uid, stylist] = [v[COL.NO - 1], v[COL.NAME - 1], v[COL.UID - 1], v[COL.STYLIST - 1]];
     if (uid) {
-      push_(uid, `✂️ คุณ${name} ใกล้ถึงคิวแล้ว (คิวที่ ${no})\nกรุณากลับมาที่ร้าน Million Hair ภายใน 10 นาทีนะคะ`);
+      const who = stylist && stylist !== ANY_STYLIST ? `\n${stylist}พร้อมให้บริการแล้ว` : '';
+      push_(uid, `✂️ คุณ${name} ใกล้ถึงคิวแล้ว (คิวที่ ${no})${who}\nกรุณากลับมาที่ร้าน ${SHOP.name} ภายใน 10 นาทีนะคะ`);
     }
   } else if (status === STATUS.SERVING) {
     stamp(COL.CALLED);
@@ -152,14 +205,19 @@ function sheet_() {
   return SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
 }
 
-function todayRows_() {
+function allRows_() {
   const sh = sheet_();
   const last = sh.getLastRow();
   if (last < 2) return [];
+  return sh.getRange(2, 1, last - 1, HEADERS.length).getValues().map((v, i) => ({
+    row: i + 2, ts: v[COL.TS - 1], no: v[COL.NO - 1], name: v[COL.NAME - 1], service: v[COL.SERVICE - 1],
+    status: v[COL.STATUS - 1], uid: v[COL.UID - 1], stylist: v[COL.STYLIST - 1], visit: v[COL.VISIT - 1],
+  }));
+}
+
+function todayRows_() {
   const today = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
-  return sh.getRange(2, 1, last - 1, HEADERS.length).getValues()
-    .map((v, i) => ({ row: i + 2, ts: v[0], no: v[1], service: v[3], status: v[4], uid: v[5] }))
-    .filter(r => r.ts instanceof Date && Utilities.formatDate(r.ts, TZ, 'yyyy-MM-dd') === today);
+  return allRows_().filter(r => r.ts instanceof Date && Utilities.formatDate(r.ts, TZ, 'yyyy-MM-dd') === today);
 }
 
 /** ตรวจ ID token กับ LINE แล้วคืน userId จริง (กันการปลอม userId) */
