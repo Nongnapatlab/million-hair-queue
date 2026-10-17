@@ -241,7 +241,7 @@ const ctaLabel = (th, en) => `${th}<small>${en}</small>`;
 function render() {
   window.scrollTo(0, 0);
   ({ book: renderBook, done: renderDone, my: renderMy, price: renderPrice, stylists: renderStylists,
-     lookbook: renderLookbook, about: renderAbout, rate: renderRate, rebook: renderRebook }[page] || renderBook)();
+     lookbook: renderLookbook, about: renderAbout, rate: renderRate, rebook: renderRebook, points: () => renderPoints() }[page] || renderBook)();
 }
 function go(p, s) { page = p; if (s) step = s; render(); }
 
@@ -446,8 +446,10 @@ function uploadSlip(b, cb) {
 
 // ---------- MY BOOKINGS ----------
 async function renderMy() {
-  $('view').innerHTML = `<div class="eyebrow" style="margin-top:0"><h1>นัดของฉัน</h1><span class="lead" style="margin:0">${profile ? 'สวัสดี ' + esc(draft.name || profile.displayName) : ''}</span></div>
+  $('view').innerHTML = `<div class="tabs"><button class="on">นัดของฉัน</button><button id="toPoints">แต้มสะสม · POINTS</button></div>
+    <div class="eyebrow" style="margin-top:0"><h1>นัดของฉัน</h1><span class="lead" style="margin:0">${profile ? 'สวัสดี ' + esc(draft.name || profile.displayName) : ''}</span></div>
     <div id="myBody"><div class="loading">LOADING…</div></div>`;
+  $('toPoints').onclick = () => go('points');
   foot('', ctaLabel('+ จองคิวใหม่', 'NEW BOOKING'), () => { draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: draft.length }; go('book', 1); });
   try { if (!my) my = await api({ action: 'my' }); } catch (e) { $('myBody').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
   if (page !== 'my') return;
@@ -508,6 +510,54 @@ async function renderRebook() {
   try { if (!my) my = await api({ action: 'my' }); } catch (e) { $('view').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
   const b = [...my.upcoming, ...my.past].find(x => x.id === new URLSearchParams(location.search).get('id'));
   if (b) rebookFrom(b); else go('book', 1);
+}
+
+// ---------- POINTS ----------
+async function renderPoints(fresh) {
+  $('view').innerHTML = '<div class="loading">LOADING…</div>';
+  foot('', ctaLabel('+ จองคิวใหม่', 'NEW BOOKING'), () => go('book', 1));
+  let s;
+  try { s = fresh || await api({ action: 'points' }); } catch (e) { $('view').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  if (page !== 'points') return;
+  const L = C.loyalty, size = L.cardSize, cur = Math.min(s.current, size);
+  const cut = L.rewards.find(r => r.id === 'cut');
+  const label = i => { const rw = L.rewards.find(r => r.at === i); return rw ? rw.id[0].toUpperCase() : i; };
+  const fmt = ts => { const d = new Date(ts.replace(' ', 'T') + '+07:00'); return `${d.getDate()} ${EN_MON[d.getMonth()]}`; };
+  $('view').innerHTML = `<div class="tabs"><button data-go="my">นัดของฉัน</button><button class="on">แต้มสะสม</button></div>
+    <div class="eyebrow" style="margin-top:0"><h1>แต้มของฉัน</h1><span class="lead" style="margin:0">${esc(draft.name || profile.displayName)}${s.memberNo ? ' · № ' + esc(s.memberNo) : ''}</span></div>
+    <div class="deposit frame" style="margin-top:6px">
+      <div class="head"><div><b style="font:700 64px var(--en);color:#fff;letter-spacing:0">${cur}</b><span style="font:700 26px var(--en);color:#9DB7D5"> / ${size}</span></div>
+        <div style="text-align:right;font:500 11px var(--mono);letter-spacing:1px;color:#9DB7D5">MEMBER${s.exp ? '<br>EXP ' + esc(s.exp) : ''}</div></div>
+      <div style="display:grid;grid-template-columns:repeat(${size},1fr);gap:4px;margin:12px 0">${[...Array(size)].map((_, i) => `<i style="height:6px;background:${i < cur ? '#9DB7D5' : '#3A4B62'}"></i>`).join('')}</div>
+      <div style="font-size:14px">${cur >= size ? 'ครบแล้ว! แลกตัดผมฟรีได้เลย' : `อีก ${size - cur} แต้ม รับ${esc(cut.th.replace(' 1 ครั้ง', ''))}`}</div>
+    </div>
+    <p class="label" style="margin:20px 0 10px">Stamps · 1 แต้ม ทุกยอด ฿${L.bahtPerPoint}</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">${[...Array(size)].map((_, i) => {
+      const n = i + 1, on = n <= cur, special = L.rewards.some(r => r.at === n);
+      return `<div style="aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font:700 20px var(--en);
+        ${on ? 'background:var(--steel);color:#fff' : special ? 'border:1.5px solid var(--steel);background:var(--steel-soft);color:var(--navy)' : 'border:1.5px dashed var(--cross);color:var(--muted)'}">${on ? '✦' : label(n)}</div>`; }).join('')}</div>
+    <p class="label" style="margin:22px 0 4px">Rewards</p>
+    ${L.rewards.map(rw => { const st = s.rewards.find(x => x.id === rw.id);
+      return `<div class="past" style="grid-template-columns:44px 1fr auto"><div class="d"><b>${rw.at}</b></div>
+        <div>${esc(rw.th)}<br><small style="font-family:var(--mono);letter-spacing:.5px">${esc(rw.en)} · ${esc(rw.value)}</small></div>
+        ${st.redeemed ? '<span class="label">แลกแล้ว</span>' : st.available ? `<button class="cta" data-redeem="${rw.id}" style="min-width:0;padding:9px 16px">แลกเลย</button>`
+          : `<span class="chip" style="cursor:default">อีก ${st.need}</span>`}</div>`; }).join('')}
+    ${s.vouchers.length ? `<p class="label" style="margin:22px 0 8px">รางวัลที่รอใช้ · แสดงโค้ดนี้ที่ร้าน</p>` + s.vouchers.map(v =>
+      `<div class="sum frame" style="padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+        <span>${esc((L.rewards.find(r => r.id === v.reward) || {}).th || v.reward)}</span><b style="font:700 22px var(--mono)">${esc(v.code)}</b></div>`).join('') : ''}
+    <p class="label" style="margin:22px 0 4px">History</p>
+    ${s.history.length ? s.history.map(h => `<div class="past" style="grid-template-columns:52px 1fr auto"><div class="d"><small>${fmt(h.ts)}</small></div>
+      <div>${esc(h.detail || '')}<br><small>${h.type === 'EARN' ? 'ได้รับแต้ม' : 'แลกรางวัล · ' + esc(h.status)}</small></div>
+      <b style="font:700 18px var(--en);color:${h.type === 'EARN' ? 'var(--steel-d)' : 'var(--muted)'}">${h.type === 'EARN' ? '+' + h.points : 'แลก'}</b></div>`).join('')
+      : '<div class="empty">ยังไม่มีแต้ม · ได้แต้มเมื่อใช้บริการเสร็จ</div>'}`;
+  $('view').querySelector('[data-go]').onclick = () => go('my');
+  $('view').querySelectorAll('[data-redeem]').forEach(btn => btn.onclick = async () => {
+    const rw = L.rewards.find(r => r.id === btn.dataset.redeem);
+    if (!confirm(`แลก${rw.th}?\nจะได้โค้ดสำหรับแสดงที่ร้านในการมาครั้งถัดไป`)) return;
+    btn.disabled = true;
+    try { const r = await api({ action: 'redeem', reward: rw.id }); alert(`แลกสำเร็จ · โค้ด ${r.code}\nแสดงโค้ดนี้กับช่างตอนมาใช้บริการ`); renderPoints(r); }
+    catch (e) { alert(e.message); btn.disabled = false; }
+  });
 }
 
 // ---------- RATE ----------
@@ -630,7 +680,7 @@ $('close').onclick = () => { if (liff.isInClient()) liff.closeWindow(); else go(
         }
       });
     const p = new URLSearchParams(location.search).get('page');
-    go(['book', 'my', 'price', 'stylists', 'lookbook', 'about', 'rate', 'rebook'].includes(p) ? p : 'book', 1);
+    go(['book', 'my', 'price', 'stylists', 'lookbook', 'about', 'rate', 'rebook', 'points'].includes(p) ? p : 'book', 1);
   } catch (e) {
     $('view').innerHTML = `<p class="err">เปิดหน้าไม่สำเร็จ: ${esc(e.message)}</p>`;
   }

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>Million Hair · Member Card (print)</title>
+<link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@100;300&family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Thai:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sheet { width: 210mm; height: 297mm; display: grid; grid-template-columns: repeat(2, 90mm); grid-auto-rows: 55mm;
+    justify-content: center; align-content: center; page-break-after: always; }
+  .sheet.back { direction: rtl; } /* สลับคอลัมน์ให้ตรงกันเมื่อพิมพ์สองหน้า */
+  .card { width: 90mm; height: 55mm; position: relative; overflow: hidden; direction: ltr; outline: 0.2mm dashed #C9CED6; }
+  /* front */
+  .front { background: #1E2B3C; color: #F3F3F1;
+    background-image: repeating-linear-gradient(90deg, transparent 0 8.6mm, rgba(157, 183, 213, .09) 8.6mm 8.75mm); }
+  .front .tag { position: absolute; top: 4.5mm; left: 5mm; font: 500 2.2mm 'IBM Plex Mono', monospace; letter-spacing: .5mm; color: #9DB7D5; }
+  .front .no { position: absolute; top: 4.5mm; right: 5mm; font: 500 2.2mm 'IBM Plex Mono', monospace; color: #9DB7D5; }
+  .front .logo { position: absolute; top: 15mm; left: 0; right: 0; text-align: center; }
+  .front .word { font: 100 13mm 'Josefin Sans', sans-serif; letter-spacing: .8mm; line-height: 1; }
+  .front .sub { font: 300 2.6mm 'Josefin Sans', sans-serif; letter-spacing: 1.6mm; margin-top: 2.4mm; }
+  .front .cta { position: absolute; left: 5mm; bottom: 4.5mm; }
+  .front .cta b { display: block; font: 700 4.6mm 'Barlow Condensed', sans-serif; letter-spacing: .2mm; }
+  .front .cta span { font: 400 2.3mm 'IBM Plex Sans Thai', sans-serif; color: #C6D2E1; }
+  .front .addr { position: absolute; right: 5mm; bottom: 5mm; text-align: right; font: 500 2mm 'IBM Plex Mono', monospace; color: #9DB7D5; line-height: 1.35; }
+  /* back */
+  .back-card { background: #F3F3F1; color: #1B2533; padding: 4.5mm 5mm; }
+  .back-card .hd { display: flex; justify-content: space-between; align-items: baseline; border-bottom: .3mm solid #1B2533; padding-bottom: 1.4mm; }
+  .back-card .hd b { font: 700 4.4mm 'Barlow Condensed', 'IBM Plex Sans Thai', sans-serif; }
+  .back-card .hd b span { font-family: 'IBM Plex Sans Thai', sans-serif; font-weight: 500; }
+  .back-card .hd small { font: 500 2mm 'IBM Plex Mono', monospace; }
+  .stamps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3.8mm 0; margin-top: 2.4mm; justify-items: center; }
+  .st { width: 9mm; height: 9mm; border-radius: 50%; border: .25mm dashed #9AA5B4; display: grid; place-items: center;
+    font: 600 3.4mm 'Barlow Condensed', sans-serif; color: #9AA5B4; position: relative; }
+  .st.rw { border: .35mm solid #5A7FA8; background: #E4EBF3; color: #1E2B3C; }
+  .st em { position: absolute; top: 9.3mm; font: 500 1.5mm 'IBM Plex Mono', monospace; font-style: normal; color: #46698F; letter-spacing: .1mm; white-space: nowrap; }
+  .back-card .ft { position: absolute; left: 5mm; right: 5mm; bottom: 3.4mm; display: flex; justify-content: space-between;
+    font: 400 1.9mm 'IBM Plex Sans Thai', sans-serif; color: #6E7887; }
+  body.single { width: 90mm; height: 55mm; }
+  body.single .card { outline: 0; }
+</style>
+</head>
+<body>
+<script>
+const mode = location.hash.slice(1) || 'sheet';
+const front = () => `<div class="card front"><span class="tag">✦ MEMBER CARD</span><span class="no">№ ______</span>
+  <div class="logo"><div class="word">MILLION</div><div class="sub">✦ HAIR STUDIO ✦</div></div>
+  <div class="cta"><b>COLLECT 10 · CUT FREE</b><span>สะสมครบ 10 แต้ม รับตัดผมฟรี</span></div>
+  <div class="addr">SUKHUMVIT 49<br>@millionhair</div></div>`;
+const back = () => `<div class="card back-card"><div class="hd"><b>POINTS · <span>แต้มสะสม</span></b><small>1 PT = ฿500</small></div>
+  <div class="stamps">${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => n === 5 ? '<div class="st rw">T<em>TREATMENT</em></div>'
+    : n === 10 ? '<div class="st rw">C<em>CUT FREE</em></div>' : `<div class="st">${n}</div>`).join('')}</div>
+  <div class="ft"><span>ครบ 5 แต้ม ทรีตเมนต์ฟรี · ครบ 10 แต้ม ตัดผมฟรี</span><span>ดูแต้มใน LINE: MY BOOKING → POINTS</span></div></div>`;
+if (mode === 'front' || mode === 'back') {
+  document.body.className = 'single';
+  document.body.insertAdjacentHTML('beforeend', mode === 'front' ? front() : back());
+} else {
+  document.body.insertAdjacentHTML('beforeend',
+    `<div class="sheet">${Array(10).fill(0).map(front).join('')}</div><div class="sheet back">${Array(10).fill(0).map(back).join('')}</div>`);
+}
+</script>
+</body>
+</html>

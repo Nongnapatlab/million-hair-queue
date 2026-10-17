@@ -265,6 +265,9 @@ function openDrawer(id) {
       <span>สลิป</span><div>${b.slip ? `<a href="${esc(b.slip)}" target="_blank">เปิดสลิป ↗</a>` : '–'}</div>
       <span>ลูกค้า</span><div>${b.channel}${b.channel === 'LINE' ? (b.visit > 1 ? ` · มาครั้งที่ ${b.visit}` : ' · ลูกค้าใหม่') : ''}</div>
       <span>จองเมื่อ</span><div>${esc(b.created)}</div>
+      ${b.loyalty ? `<span>แต้มสะสม</span><div>${b.loyalty.memberNo ? '№ ' + esc(b.loyalty.memberNo) + ' · ' : ''}${Math.min(b.loyalty.current, 10)} / 10 แต้ม</div>
+      <span>รางวัลรอใช้</span><div>${b.loyalty.vouchers.length ? b.loyalty.vouchers.map(v => `<div class="row" style="margin-bottom:4px"><code>${esc(v.code)}</code>
+        ${v.reward === 'cut' ? 'ตัดผมฟรี' : 'ทรีตเมนต์ฟรี'} <button class="btn ghost" style="padding:3px 10px" data-voucher="${esc(v.code)}">ใช้โค้ด</button></div>`).join('') : '–'}</div>` : ''}
       ${b.rating ? `<span>คะแนน</span><div>${'★'.repeat(b.rating)}${'☆'.repeat(5 - b.rating)} ${esc(b.review || '')}</div>` : ''}
     </div>
     <div class="acts">${b.status === 'รอมัดจำ' ? '<button class="btn" id="payOk">✓ รับมัดจำแล้ว · ยืนยันนัด</button>' : ''}${acts}</div>
@@ -276,7 +279,16 @@ function openDrawer(id) {
   $('drawer').querySelectorAll('[data-to]').forEach(btn => btn.onclick = async () => {
     if (btn.dataset.to === 'ยกเลิก' && !confirm('ยกเลิกนัดนี้?')) return;
     btn.disabled = true;
-    try { await adminApi({ action: 'admin_set_status', id: b.id, status: btn.dataset.to }); closeDrawer(); await loadDay(); }
+    try {
+      const r = await adminApi({ action: 'admin_set_status', id: b.id, status: btn.dataset.to });
+      if (r.earned) alert(`ลูกค้าได้รับ +${r.earned} แต้ม`);
+      closeDrawer(); await loadDay();
+    } catch (e) { alert(e.message); btn.disabled = false; }
+  });
+  $('drawer').querySelectorAll('[data-voucher]').forEach(btn => btn.onclick = async () => {
+    if (!confirm(`ใช้โค้ด ${btn.dataset.voucher} กับการมาครั้งนี้?`)) return;
+    btn.disabled = true;
+    try { await adminApi({ action: 'admin_use_voucher', code: btn.dataset.voucher }); closeDrawer(); await loadDay(); }
     catch (e) { alert(e.message); btn.disabled = false; }
   });
   if ($('payOk')) $('payOk').onclick = async () => {

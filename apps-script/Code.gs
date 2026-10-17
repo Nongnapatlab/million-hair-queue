@@ -73,6 +73,20 @@ const MSG = {
   rebook: 'ทรงเริ่มยาวแล้วหรือยัง {ชื่อ}?\n\n{ช่าง} มีคิวว่างสัปดาห์นี้\nกดจองซ้ำ จะได้บริการและช่างคนเดิมทันที',
 };
 
+// ---------- บัตรสะสมแต้ม: 1 แต้มทุกยอด ฿500 · ครบ 5 ทรีตเมนต์ฟรี · ครบ 10 ตัดผมฟรี (แล้วเริ่มบัตรใหม่) ----------
+const LOYALTY = {
+  bahtPerPoint: 500, cardSize: 10, validMonths: 12,
+  rewards: [
+    { id: 'treat', at: 5, th: 'ทรีตเมนต์ฟรี 1 ครั้ง', en: 'FREE TREATMENT', value: 'มูลค่า ฿800' },
+    { id: 'cut', at: 10, th: 'ตัดผมฟรี 1 ครั้ง', en: 'FREE HAIRCUT', value: 'มูลค่า ฿500–600' },
+  ],
+};
+const POINTS_SHEET = 'Points';
+const POINTS_HEADERS = ['Timestamp', 'LINE User ID', 'Name', 'Type', 'Points', 'Booking ID', 'Reward', 'Code', 'Status', 'Used At', 'Card No'];
+const P = {}; ['ts', 'uid', 'name', 'type', 'points', 'bookingId', 'reward', 'code', 'status', 'usedAt', 'card'].forEach((k, i) => { P[k] = i; });
+const MEMBERS_SHEET = 'Members';
+const MEMBERS_HEADERS = ['LINE User ID', 'Member No', 'Name', 'Joined'];
+
 const HEADERS = ['Created At', 'Booking ID', 'Date', 'Start', 'End', 'Duration', 'Stylist', 'Services',
   'Hair Length', 'Est. Price', 'Deposit', 'Deposit Status', 'Status', 'Name', 'Phone', 'Pronoun',
   'Chemical History', 'Note', 'Ref Photos', 'Slip', 'LINE User ID', 'Visit No', 'Arrived At',
@@ -94,6 +108,14 @@ function setup() {
   sh.setFrozenRows(1);
   sh.getRange(2, 1, sh.getMaxRows() - 1, HEADERS.length).setNumberFormat('@'); // เก็บทุกอย่างเป็นข้อความ
   sh.hideColumns(K.uid + 1);
+
+  [[POINTS_SHEET, POINTS_HEADERS, P.uid], [MEMBERS_SHEET, MEMBERS_HEADERS, 0]].forEach(([name, headers, hideCol]) => {
+    const s = ss.getSheetByName(name) || ss.insertSheet(name);
+    s.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1E2B3C').setFontColor('#F6F6F4');
+    s.setFrozenRows(1);
+    s.getRange(2, 1, s.getMaxRows() - 1, headers.length).setNumberFormat('@');
+    s.hideColumns(hideCol + 1);
+  });
 
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('UPLOAD_FOLDER_ID')) {
@@ -148,6 +170,8 @@ function doPost(e) {
       case 'slip': return json_(attachSlip_(uid, body));
       case 'rate': return json_(rate_(uid, body));
       case 'last': return json_(lastProfile_(uid));
+      case 'points': return json_({ ok: true, ...pointsOf_(uid) });
+      case 'redeem': return json_(redeem_(uid, body.reward));
       default:
         if (String(body.action).startsWith('admin_')) return json_(admin_(uid, body));
         return json_({ ok: false, error: 'unknown action' });
@@ -160,7 +184,7 @@ function doPost(e) {
 function publicConfig_() {
   const pp = PropertiesService.getScriptProperties().getProperty('PROMPTPAY_ID');
   return {
-    ok: true, shop: SHOP, lengths: LENGTHS, services: SERVICES, stylists: STYLISTS,
+    ok: true, shop: SHOP, lengths: LENGTHS, services: SERVICES, stylists: STYLISTS, loyalty: LOYALTY,
     chemicals: CHEMICALS, pronouns: PRONOUNS, dates: bookableDates_(),
     promptpay: pp ? promptPayPayload_(pp, SHOP.deposit) : null,
   };
@@ -408,7 +432,7 @@ function tick() {
     }
     if (v[K.status] === STATUS.DONE && !v[K.afterSent] && v[K.finished] && now - tsMs_(v[K.finished]) >= 3 * 3600000
         && now - tsMs_(v[K.finished]) < 48 * 3600000 && hour >= 9 && hour < 21) {
-      push_(v[K.uid], [card_(MSG.afterVisit, b, [['ให้คะแนน', `${LIFF_URL}?page=rate&id=${encodeURIComponent(b.id)}`]])]);
+      push_(v[K.uid], [card_(MSG.afterVisit, b, [['ให้คะแนน', `${LIFF_URL}?page=rate&id=${encodeURIComponent(b.id)}`], ['ดูแต้ม', LIFF_URL + '?page=points']])]);
       setCells_(r.row, { [K.afterSent]: nowStr_() });
     }
   });
@@ -433,6 +457,89 @@ function rebookNudge() {
   });
 }
 
+// ---------- loyalty ----------
+
+function pointRows_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(POINTS_SHEET);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, POINTS_HEADERS.length).getDisplayValues().map((v, i) => ({ row: i + 2, v }));
+}
+
+function appendTo_(sheetName, width, v) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(sheetName);
+  sh.getRange(sh.getLastRow() + 1, 1, 1, width).setNumberFormat('@').setValues([v]);
+}
+
+/** เลขสมาชิก 4 หลัก (ออกให้ครั้งแรกที่ได้แต้ม) */
+function memberNo_(uid, name, create) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(MEMBERS_SHEET);
+  const rows = sh.getLastRow() < 2 ? [] : sh.getRange(2, 1, sh.getLastRow() - 1, MEMBERS_HEADERS.length).getDisplayValues();
+  const found = rows.find(r => r[0] === uid);
+  if (found || !create) return found ? found[1] : '';
+  const no = String(rows.length + 1).padStart(4, '0');
+  appendTo_(MEMBERS_SHEET, MEMBERS_HEADERS.length, [uid, no, name, nowStr_()]);
+  return no;
+}
+
+/** ได้แต้มเมื่อร้านกดเสร็จสิ้น (ครั้งเดียวต่อนัด) คืนจำนวนแต้มที่ได้ */
+function earnPoints_(v) {
+  if (!v[K.uid] || pointRows_().some(r => r.v[P.type] === 'EARN' && r.v[P.bookingId] === v[K.id])) return 0;
+  const pts = Math.floor(Number(v[K.price]) / LOYALTY.bahtPerPoint);
+  if (pts <= 0) return 0;
+  memberNo_(v[K.uid], v[K.name], true);
+  const row = new Array(POINTS_HEADERS.length).fill('');
+  Object.assign(row, { [P.ts]: nowStr_(), [P.uid]: v[K.uid], [P.name]: v[K.name], [P.type]: 'EARN',
+    [P.points]: String(pts), [P.bookingId]: v[K.id], [P.reward]: v[K.services] });
+  appendTo_(POINTS_SHEET, POINTS_HEADERS.length, row);
+  return pts;
+}
+
+/** สรุปบัตรของลูกค้า: แต้มในบัตรปัจจุบัน รางวัลที่แลกได้ โค้ดที่รอใช้ และประวัติ */
+function pointsOf_(uid, rowsCache) {
+  const mine = (rowsCache || pointRows_()).filter(r => r.v[P.uid] === uid).map(r => r.v);
+  const earned = mine.filter(v => v[P.type] === 'EARN').reduce((s, v) => s + Number(v[P.points]), 0);
+  const redeems = mine.filter(v => v[P.type] === 'REDEEM');
+  const cardsDone = redeems.filter(v => v[P.reward] === 'cut').length;
+  const cardNo = cardsDone + 1;
+  const current = earned - cardsDone * LOYALTY.cardSize;
+  const lastEarn = mine.filter(v => v[P.type] === 'EARN').map(v => v[P.ts]).sort().pop();
+  let exp = '';
+  if (lastEarn) {
+    const d = new Date(tsMs_(lastEarn));
+    d.setUTCMonth(d.getUTCMonth() + LOYALTY.validMonths);
+    exp = Utilities.formatDate(d, TZ, 'MM/yyyy');
+  }
+  const rewards = LOYALTY.rewards.map(rw => {
+    const used = redeems.some(v => v[P.reward] === rw.id && Number(v[P.card]) === cardNo);
+    return { ...rw, redeemed: used, available: !used && current >= rw.at, need: Math.max(0, rw.at - current) };
+  });
+  return {
+    memberNo: memberNo_(uid), current, cardNo, earned, exp, rewards,
+    vouchers: redeems.filter(v => v[P.status] === 'ใช้ได้').map(v => ({ code: v[P.code], reward: v[P.reward], ts: v[P.ts] })),
+    history: mine.slice(-20).reverse().map(v => ({ ts: v[P.ts], type: v[P.type], points: Number(v[P.points]) || 0,
+      detail: v[P.type] === 'EARN' ? v[P.reward] : (LOYALTY.rewards.find(r => r.id === v[P.reward]) || {}).th, status: v[P.status] })),
+  };
+}
+
+function redeem_(uid, rewardId) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    const s = pointsOf_(uid);
+    const rw = s.rewards.find(r => r.id === rewardId);
+    if (!rw || !rw.available) throw new Error('ยังแลกรางวัลนี้ไม่ได้');
+    const code = `RW-${Math.floor(Math.random() * 900000) + 100000}`;
+    const name = (rows_().filter(r => r.v[K.uid] === uid).pop() || { v: [] }).v[K.name] || '';
+    const row = new Array(POINTS_HEADERS.length).fill('');
+    Object.assign(row, { [P.ts]: nowStr_(), [P.uid]: uid, [P.name]: name, [P.type]: 'REDEEM', [P.points]: '0',
+      [P.reward]: rw.id, [P.code]: code, [P.status]: 'ใช้ได้', [P.card]: String(s.cardNo) });
+    appendTo_(POINTS_SHEET, POINTS_HEADERS.length, row);
+    return { ok: true, code, ...pointsOf_(uid) };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 // ---------- admin ----------
 
 function admin_(uid, b) {
@@ -444,7 +551,22 @@ function admin_(uid, b) {
 
   if (b.action === 'admin_day') {
     if (!re.test(b.date)) throw new Error('วันที่ไม่ถูกต้อง');
-    return { ok: true, bookings: rows_().filter(r => r.v[K.date] === b.date).map(r => toBooking_(r.v, true)), config: publicConfig_() };
+    const day = rows_().filter(r => r.v[K.date] === b.date);
+    const pr = pointRows_();
+    const loyalty = {};
+    day.forEach(r => { if (r.v[K.uid] && !loyalty[r.v[K.id]]) {
+      const s = pointsOf_(r.v[K.uid], pr);
+      loyalty[r.v[K.id]] = { memberNo: s.memberNo, current: s.current, vouchers: s.vouchers };
+    } });
+    return { ok: true, bookings: day.map(r => ({ ...toBooking_(r.v, true), loyalty: loyalty[r.v[K.id]] || null })), config: publicConfig_() };
+  }
+  if (b.action === 'admin_use_voucher') {
+    const r = pointRows_().find(x => x.v[P.code] === b.code && x.v[P.type] === 'REDEEM');
+    if (!r || r.v[P.status] !== 'ใช้ได้') throw new Error('โค้ดนี้ใช้ไม่ได้');
+    const sh = SpreadsheetApp.getActive().getSheetByName(POINTS_SHEET);
+    sh.getRange(r.row, P.status + 1).setValue('ใช้แล้ว');
+    sh.getRange(r.row, P.usedAt + 1).setNumberFormat('@').setValue(nowStr_());
+    return { ok: true };
   }
   if (b.action === 'admin_set_status') {
     if (!Object.values(STATUS).includes(b.status)) throw new Error('สถานะไม่ถูกต้อง');
@@ -454,6 +576,7 @@ function admin_(uid, b) {
     if (stamp !== undefined && !r.v[stamp]) cells[stamp] = nowStr_();
     if (b.status === STATUS.SERVING && !r.v[K.arrived]) cells[K.arrived] = nowStr_();
     setCells_(r.row, cells);
+    if (b.status === STATUS.DONE) return { ok: true, earned: earnPoints_(r.v) };
     if (b.status === STATUS.CANCELLED && r.v[K.uid]) {
       push_(r.v[K.uid], [card_(MSG.cancelled, toBooking_(r.v), [['จองใหม่', LIFF_URL + '?page=book']])]);
     }
