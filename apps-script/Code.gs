@@ -7,39 +7,41 @@
  *   ADMIN_USER_IDS    LINE User ID ของแอดมิน คั่นด้วย ,
  *   PROMPTPAY_ID      (ไม่บังคับ) เบอร์/เลขบัตรสำหรับ QR มัดจำ — ว่างไว้ = โหมดสาธิต ไม่ต้องโอนจริง
  *
- * ติดตั้ง: รัน setup() 1 ครั้ง แล้ว setupRichMenu() 1 ครั้ง (หลัง GitHub Pages อัปเดตแล้ว)
+ * ติดตั้ง: รัน setup() ทุกครั้งที่อัปเดตโค้ด (หัวตาราง + trigger) · setupRichMenu() ครั้งเดียว
  */
 
 const TZ = 'Asia/Bangkok';
 const SHEET = 'Bookings';
 const SITE = 'https://nongnapatlab.github.io/million-hair-queue/';
 const LIFF_URL = 'https://liff.line.me/2012052973-UNW6H5DF';
+const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('ซอยสุขุมวิท 49 คลองตันเหนือ วัฒนา กรุงเทพฯ');
 
 // ---------- ข้อมูลร้าน (ร้านสมมติสำหรับโครงงาน) ----------
 const SHOP = {
   name: 'Million Hair Studio',
-  hours: 'เปิด 10:00–20:00 น. · ปิดทุกวันพุธ',
-  address: '[ที่อยู่ร้านสมมติ]',
+  hours: 'เปิด 10:00–20:00 · ปิดทุกวันพุธ',
+  address: 'ซอยสุขุมวิท 49 คลองตันเหนือ วัฒนา กรุงเทพฯ · BTS พร้อมพงษ์ เดินต่อประมาณ 10 นาที',
   phone: '[เบอร์ร้านสมมติ]',
   open: 10 * 60, close: 20 * 60, closedDays: [3], // 0=อา … 3=พ
   slotStep: 30, leadMin: 30, daysAhead: 14,
-  deposit: 300,
+  deposit: 300, holdMin: 30, // กันคิวไว้ 30 นาทีระหว่างรอมัดจำ
+  mapUrl: MAP_URL,
 };
 const LENGTHS = [
-  { code: 'S', th: 'สั้น', mult: 0.8 },
-  { code: 'M', th: 'ประบ่า', mult: 1 },
-  { code: 'L', th: 'ยาว', mult: 1.3 },
-  { code: 'XL', th: 'ยาวมาก', mult: 1.6 },
+  { code: 'S', th: 'สั้น' }, { code: 'M', th: 'ประบ่า' }, { code: 'L', th: 'ยาว' },
+  { code: 'XL', th: 'ยาวมาก', note: 'ผมยาวพิเศษหรือหนามาก ช่างจะประเมินราคาให้ก่อนเริ่มงาน' },
 ];
-// chem: ราคาคิดตามความยาวผม (ไม่แบ่งเพศ)
+// ราคาตามความยาวผม S / M / L (XL ใช้ราคา L แล้วช่างประเมินเพิ่มหน้างาน) · ไม่แบ่งตามเพศ
 const SERVICES = [
-  { id: 'cut', th: 'ตัดผม', en: 'HAIRCUT', min: 45, price: 500, chem: false },
-  { id: 'wash', th: 'สระ-ไดร์', en: 'WASH & BLOW-DRY', min: 30, price: 400, chem: false },
-  { id: 'color', th: 'ทำสี', en: 'COLOR', min: 120, price: 2500, chem: true },
-  { id: 'bleach', th: 'ไฮไลท์ / บลีช', en: 'HIGHLIGHT & BLEACH', min: 180, price: 3500, chem: true },
-  { id: 'perm', th: 'ดัด', en: 'PERM', min: 150, price: 2800, chem: true },
-  { id: 'straight', th: 'ยืด', en: 'STRAIGHTENING', min: 180, price: 3200, chem: true },
-  { id: 'treat', th: 'ทรีตเมนต์', en: 'TREATMENT', min: 45, price: 1000, chem: true },
+  { id: 'cut', th: 'ตัดผม', en: 'HAIRCUT', min: 45, prices: { S: 500, M: 500, L: 600 }, rebookDays: 35 },
+  { id: 'wash', th: 'สระ-ไดร์', en: 'WASH & BLOW-DRY', min: 30, prices: { S: 350, M: 400, L: 500 } },
+  { id: 'color', th: 'ทำสี', en: 'COLOR', min: 120, prices: { S: 1800, M: 2500, L: 3200 }, rebookDays: 56 },
+  { id: 'bleach', th: 'ไฮไลท์-บลีช', en: 'HIGHLIGHT & BLEACH', min: 180, prices: { S: 2500, M: 3500, L: 4500 }, rebookDays: 56 },
+  { id: 'perm', th: 'ดัด', en: 'PERM', min: 150, prices: { S: 2000, M: 2800, L: 3500 } },
+  { id: 'straight', th: 'ยืด', en: 'STRAIGHTENING', min: 180, prices: { S: 2500, M: 3200, L: 4000 } },
+  { id: 'treat', th: 'ทรีตเมนต์', en: 'TREATMENT', min: 45, prices: { S: 800, M: 1000, L: 1200 } },
+  { id: 'beard', th: 'แต่งหนวด', en: 'BEARD TRIM', min: 20, prices: { S: 300, M: 300, L: 300 } },
+  { id: 'ext', th: 'ต่อผม', en: 'HAIR EXTENSIONS', min: 180, prices: { S: 5000, M: 5000, L: 5000 }, from: true },
 ];
 const STYLISTS = [
   { id: 'max', name: 'Max', role: 'Senior · Cut & fade' },
@@ -52,26 +54,42 @@ const CHEMICALS = ['ทำสี', 'บลีช', 'ดัด', 'ยืด', '�
 const PRONOUNS = ['ไม่ระบุ', 'He', 'She', 'They'];
 
 const STATUS = {
-  CONFIRMED: 'ยืนยันแล้ว', ARRIVED: 'มาถึงแล้ว', SERVING: 'รับบริการ',
+  PENDING: 'รอมัดจำ', CONFIRMED: 'ยืนยันแล้ว', ARRIVED: 'มาถึงแล้ว', SERVING: 'รับบริการ',
   DONE: 'เสร็จสิ้น', NO_SHOW: 'ไม่มา', CANCELLED: 'ยกเลิก',
 };
-const ACTIVE = [STATUS.CONFIRMED, STATUS.ARRIVED, STATUS.SERVING];
-const DEPOSIT = { DEMO: 'สาธิต (ไม่ต้องโอน)', SLIP: 'แนบสลิปแล้ว · รอตรวจ', PAID: 'ตรวจแล้ว', NONE: 'ไม่เก็บมัดจำ' };
+const ACTIVE = [STATUS.PENDING, STATUS.CONFIRMED, STATUS.ARRIVED, STATUS.SERVING];
+const DEPOSIT = { UNPAID: 'ยังไม่ชำระ', SLIP: 'แนบสลิปแล้ว · รอตรวจ', PAID: 'ชำระแล้ว', NONE: 'ไม่เก็บมัดจำ' };
+
+// ---------- ข้อความ LINE (น้ำเสียงกลาง ไม่ใช้ ครับ/ค่ะ) · {ชื่อ} {วันที่} {เวลา} {ช่าง} {บริการ} {รหัสจอง} {ลิงก์จอง} ----------
+const MSG = {
+  pending: 'ได้รับคำขอจองแล้ว {ชื่อ}\n\n{วันที่} · {เวลา} น.\nช่าง {ช่าง} · {บริการ}\n\nโอนมัดจำ ฿300 ผ่าน PromptPay แล้วแนบสลิปภายใน 30 นาที เพื่อล็อกคิวนี้ไว้\nรหัสจอง {รหัสจอง}',
+  confirmed: 'จองสำเร็จ ✓ เจอกัน {วันที่} เวลา {เวลา} น.\nช่าง {ช่าง} · {บริการ}\nรหัสจอง {รหัสจอง}\n\nเลื่อนนัดได้ฟรีก่อน 24 ชม. ผ่านเมนู MY BOOKING',
+  reminderD1: 'พรุ่งนี้เจอกัน {ชื่อ} ✦\n{วันที่} · {เวลา} น. กับ {ช่าง}\n\nถ้ามีรูปทรงที่อยากได้เพิ่ม ส่งมาในแชทนี้ได้เลย ช่างจะได้เตรียมก่อน',
+  reminder2h: 'อีก 2 ชั่วโมงถึงคิวของ {ชื่อ} ({เวลา} น.)\nร้านอยู่ซอยสุขุมวิท 49 ใกล้ BTS พร้อมพงษ์\nมาถึงก่อน 5–10 นาทีกำลังดี',
+  rescheduled: 'เปลี่ยนนัดให้แล้ว\nใหม่: {วันที่} · {เวลา} น. กับ {ช่าง}\n\nมัดจำเดิมยังใช้ได้ตามปกติ',
+  cancelled: 'ยกเลิกนัด {วันที่} {เวลา} น. แล้ว\n\nยกเลิกก่อน 24 ชม. คืนมัดจำภายใน 3 วันทำการ\nยกเลิกน้อยกว่า 24 ชม. ขอเก็บมัดจำไว้ตามเงื่อนไข\n\nพร้อมเมื่อไหร่ จองใหม่ได้ที่ {ลิงก์จอง}',
+  expired: 'คำขอจอง {วันที่} {เวลา} น. หมดเวลาแนบสลิปมัดจำแล้ว คิวนี้จึงถูกปล่อยให้คนอื่นจอง\n\nจองใหม่ได้ตลอดที่ {ลิงก์จอง}',
+  afterVisit: 'ขอบคุณที่มาหา Million วันนี้ {ชื่อ} ✦\n\nทรงใหม่เป็นยังไงบ้าง? ให้คะแนนช่าง {ช่าง} ได้ที่ปุ่มด้านล่าง ใช้เวลาไม่ถึง 30 วินาที\n\nทิป: งดสระ 48 ชม. หลังทำเคมี สีจะติดทนกว่า',
+  rebook: 'ทรงเริ่มยาวแล้วหรือยัง {ชื่อ}?\n\n{ช่าง} มีคิวว่างสัปดาห์นี้\nกดจองซ้ำ จะได้บริการและช่างคนเดิมทันที',
+};
 
 const HEADERS = ['Created At', 'Booking ID', 'Date', 'Start', 'End', 'Duration', 'Stylist', 'Services',
   'Hair Length', 'Est. Price', 'Deposit', 'Deposit Status', 'Status', 'Name', 'Phone', 'Pronoun',
   'Chemical History', 'Note', 'Ref Photos', 'Slip', 'LINE User ID', 'Visit No', 'Arrived At',
-  'Started At', 'Finished At', 'Cancelled At', 'Reminder Sent', 'Channel'];
+  'Started At', 'Finished At', 'Cancelled At', 'Reminder D-1', 'Channel',
+  'Confirmed At', 'Reminder 2h', 'After Visit Sent', 'Rebook Sent', 'Rating', 'Review'];
 const K = {}; // ชื่อ field → index (0-based)
 ['created', 'id', 'date', 'start', 'end', 'duration', 'stylist', 'services', 'length', 'price', 'deposit',
   'depositStatus', 'status', 'name', 'phone', 'pronoun', 'chem', 'note', 'photos', 'slip', 'uid', 'visit',
-  'arrived', 'started', 'finished', 'cancelled', 'reminded', 'channel'].forEach((k, i) => { K[k] = i; });
+  'arrived', 'started', 'finished', 'cancelled', 'reminded', 'channel',
+  'confirmedAt', 'reminded2h', 'afterSent', 'rebookSent', 'rating', 'review'].forEach((k, i) => { K[k] = i; });
 
 // ---------- setup ----------
 
 function setup() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEET) || ss.insertSheet(SHEET, 0);
+  if (sh.getMaxColumns() < HEADERS.length) sh.insertColumnsAfter(sh.getMaxColumns(), HEADERS.length - sh.getMaxColumns());
   sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold').setBackground('#1E2B3C').setFontColor('#F6F6F4');
   sh.setFrozenRows(1);
   sh.getRange(2, 1, sh.getMaxRows() - 1, HEADERS.length).setNumberFormat('@'); // เก็บทุกอย่างเป็นข้อความ
@@ -84,6 +102,8 @@ function setup() {
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sendReminders').timeBased().everyDays(1).atHour(18).inTimezone(TZ).create();
+  ScriptApp.newTrigger('rebookNudge').timeBased().everyDays(1).atHour(10).inTimezone(TZ).create();
+  ScriptApp.newTrigger('tick').timeBased().everyMinutes(10).create();
 }
 
 /** สร้าง rich menu ตามดีไซน์ (5 ปุ่ม) แล้วตั้งเป็นค่าเริ่มต้นของทุกคน */
@@ -125,6 +145,8 @@ function doPost(e) {
       case 'my': return json_(myBookings_(uid));
       case 'cancel': return json_(cancel_(uid, body.id));
       case 'reschedule': return json_(reschedule_(uid, body));
+      case 'slip': return json_(attachSlip_(uid, body));
+      case 'rate': return json_(rate_(uid, body));
       case 'last': return json_(lastProfile_(uid));
       default:
         if (String(body.action).startsWith('admin_')) return json_(admin_(uid, body));
@@ -136,8 +158,7 @@ function doPost(e) {
 }
 
 function publicConfig_() {
-  const props = PropertiesService.getScriptProperties();
-  const pp = props.getProperty('PROMPTPAY_ID');
+  const pp = PropertiesService.getScriptProperties().getProperty('PROMPTPAY_ID');
   return {
     ok: true, shop: SHOP, lengths: LENGTHS, services: SERVICES, stylists: STYLISTS,
     chemicals: CHEMICALS, pronouns: PRONOUNS, dates: bookableDates_(),
@@ -147,14 +168,18 @@ function publicConfig_() {
 
 // ---------- pricing / time helpers ----------
 
-const priceOf_ = (svc, len) => {
-  const m = (LENGTHS.find(l => l.code === len) || LENGTHS[1]).mult;
-  return svc.chem ? Math.round(svc.price * m / 100) * 100 : svc.price;
-};
+const priceOf_ = (svc, len) => svc.prices[len === 'XL' ? 'L' : (svc.prices[len] ? len : 'M')];
 const toMin_ = hhmm => { const [h, m] = String(hhmm).split(':').map(Number); return h * 60 + m; };
 const toHHMM_ = min => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`;
 const nowStr_ = () => Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd HH:mm:ss');
 const todayStr_ = () => Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+const nowMin_ = () => toMin_(Utilities.formatDate(new Date(), TZ, 'HH:mm'));
+/** 'yyyy-MM-dd HH:mm:ss' (เวลาไทย) → epoch ms */
+const tsMs_ = s => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(String(s || ''));
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 7, +m[5]) : NaN;
+};
+const startMs_ = b => tsMs_(`${b.date} ${b.start}`);
 
 function bookableDates_() {
   const out = [];
@@ -185,11 +210,11 @@ function slots_(body) {
   const minutes = Number(body.minutes) || 30;
   const busy = busyMap_(date, body.excludeId);
   const ids = body.stylist && body.stylist !== 'any' ? [body.stylist] : STYLISTS.map(s => s.id);
-  const nowMin = date === todayStr_() ? toMin_(Utilities.formatDate(new Date(), TZ, 'HH:mm')) + SHOP.leadMin : 0;
+  const earliest = date === todayStr_() ? nowMin_() + SHOP.leadMin : 0;
 
   const slots = [];
   for (let t = SHOP.open; t + minutes <= SHOP.close; t += SHOP.slotStep) {
-    const free = t >= nowMin && ids.some(id => isFree_(busy[id], t, t + minutes));
+    const free = t >= earliest && ids.some(id => isFree_(busy[id], t, t + minutes));
     slots.push({ time: toHHMM_(t), free });
   }
   return { ok: true, date, closed: false, minutes, slots };
@@ -199,7 +224,7 @@ function busyMap_(date, excludeId) {
   const map = {};
   STYLISTS.forEach(s => { map[s.id] = []; });
   rows_().forEach(r => {
-    if (r.v[K.date] !== date || r.v[K.status] === STATUS.CANCELLED || r.v[K.id] === excludeId) return;
+    if (r.v[K.date] !== date || !ACTIVE.concat([STATUS.DONE, STATUS.NO_SHOW]).includes(r.v[K.status]) || r.v[K.id] === excludeId) return;
     const sid = (STYLISTS.find(s => s.name === r.v[K.stylist]) || {}).id;
     if (sid) map[sid].push([toMin_(r.v[K.start]), toMin_(r.v[K.end])]);
   });
@@ -217,16 +242,16 @@ function pickStylist_(date, wanted, start, minutes, excludeId) {
   return STYLISTS.find(s => s.id === free[0]);
 }
 
-function validateSlot_(date, time, minutes) {
+function validateSlot_(date, time, minutes, allowPast) {
   const day = bookableDates_().find(d => d.date === date);
-  if (!day || day.closed) throw new Error('วันนี้ร้านปิดหรืออยู่นอกช่วงที่จองได้');
+  if (!allowPast && (!day || day.closed)) throw new Error('วันนี้ร้านปิดหรืออยู่นอกช่วงที่จองได้');
   const start = toMin_(time);
   if (!(start >= SHOP.open && start + minutes <= SHOP.close)) throw new Error('เวลาไม่อยู่ในช่วงเปิดร้าน');
-  if (date === todayStr_() && start < toMin_(Utilities.formatDate(new Date(), TZ, 'HH:mm')) + SHOP.leadMin) {
-    throw new Error('เวลานี้ผ่านไปแล้ว');
-  }
+  if (!allowPast && date === todayStr_() && start < nowMin_() + SHOP.leadMin) throw new Error('เวลานี้ผ่านไปแล้ว');
   return start;
 }
+
+const newId_ = date => `MH-${date.slice(5, 7)}${date.slice(8, 10)}-${Math.floor(Math.random() * 9000) + 1000}`;
 
 // ---------- customer actions ----------
 
@@ -240,9 +265,7 @@ function book_(uid, b) {
   const q = quote_(b.services, len);
   const start = validateSlot_(b.date, b.time, q.minutes);
 
-  const pp = PropertiesService.getScriptProperties().getProperty('PROMPTPAY_ID');
   const slipUrl = b.slip ? saveUpload_(b.slip, `slip_${b.date}_${name}`) : '';
-  if (pp && !slipUrl) throw new Error('กรุณาแนบสลิปมัดจำ');
   const photoUrls = (b.photos || []).slice(0, 3).map((p, i) => saveUpload_(p, `ref_${b.date}_${name}_${i + 1}`));
 
   const lock = LockService.getScriptLock();
@@ -250,15 +273,15 @@ function book_(uid, b) {
   let rec;
   try {
     const stylist = pickStylist_(b.date, b.stylist, start, q.minutes);
-    const id = `MH-${b.date.slice(5, 7)}${b.date.slice(8, 10)}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     const visit = rows_().filter(r => r.v[K.uid] === uid && r.v[K.status] !== STATUS.CANCELLED).length + 1;
     const v = new Array(HEADERS.length).fill('');
     Object.assign(v, {
-      [K.created]: nowStr_(), [K.id]: id, [K.date]: b.date, [K.start]: toHHMM_(start), [K.end]: toHHMM_(start + q.minutes),
-      [K.duration]: String(q.minutes), [K.stylist]: stylist.name, [K.services]: q.svcs.map(s => s.th).join(', '),
-      [K.length]: len, [K.price]: String(q.price), [K.deposit]: String(SHOP.deposit),
-      [K.depositStatus]: pp ? DEPOSIT.SLIP : DEPOSIT.DEMO, [K.status]: STATUS.CONFIRMED,
-      [K.name]: name, [K.phone]: phone, [K.pronoun]: PRONOUNS.includes(b.pronoun) ? b.pronoun : 'ไม่ระบุ',
+      [K.created]: nowStr_(), [K.id]: newId_(b.date), [K.date]: b.date, [K.start]: toHHMM_(start),
+      [K.end]: toHHMM_(start + q.minutes), [K.duration]: String(q.minutes), [K.stylist]: stylist.name,
+      [K.services]: q.svcs.map(s => s.th).join(' + '), [K.length]: len, [K.price]: String(q.price),
+      [K.deposit]: String(SHOP.deposit), [K.depositStatus]: slipUrl ? DEPOSIT.SLIP : DEPOSIT.UNPAID,
+      [K.status]: STATUS.PENDING, [K.name]: name, [K.phone]: phone,
+      [K.pronoun]: PRONOUNS.includes(b.pronoun) ? b.pronoun : 'ไม่ระบุ',
       [K.chem]: (b.chemicals || []).filter(c => CHEMICALS.includes(c)).join(', '),
       [K.note]: String(b.note || '').slice(0, 300), [K.photos]: photoUrls.join(' '), [K.slip]: slipUrl,
       [K.uid]: uid, [K.visit]: String(visit), [K.channel]: 'LINE',
@@ -268,9 +291,25 @@ function book_(uid, b) {
   } finally {
     lock.releaseLock();
   }
-  push_(uid, [confirmFlex_(rec, 'BOOKING CONFIRMED'),
-    { type: 'text', text: 'เราจะแจ้งเตือนอีกครั้งก่อนถึงนัด 1 วันนะครับ ✦' }]);
+  // ยังไม่แนบสลิป → ส่งข้อความรอมัดจำ · แนบแล้ว → รอร้านตรวจ แล้วค่อยส่งยืนยัน
+  if (!slipUrl) push_(uid, [card_(MSG.pending, rec, [['แนบสลิป', LIFF_URL + '?page=my']])]);
   return { ok: true, booking: rec };
+}
+
+function attachSlip_(uid, b) {
+  const r = findOwn_(uid, b.id);
+  if (r.v[K.status] !== STATUS.PENDING) throw new Error('นัดนี้ไม่ได้รอมัดจำแล้ว');
+  const url = saveUpload_(b.slip, `slip_${r.v[K.date]}_${r.v[K.name]}`);
+  setCells_(r.row, { [K.slip]: url, [K.depositStatus]: DEPOSIT.SLIP });
+  return { ok: true };
+}
+
+function rate_(uid, b) {
+  const r = findOwn_(uid, b.id);
+  const score = Math.round(Number(b.rating));
+  if (!(score >= 1 && score <= 5)) throw new Error('กรุณาเลือกคะแนน 1–5');
+  setCells_(r.row, { [K.rating]: String(score), [K.review]: String(b.review || '').slice(0, 500) });
+  return { ok: true };
 }
 
 function myBookings_(uid) {
@@ -293,35 +332,41 @@ function cancel_(uid, id) {
   lock.waitLock(15000);
   try {
     const r = findOwn_(uid, id);
-    if (r.v[K.status] !== STATUS.CONFIRMED) throw new Error('นัดนี้ยกเลิกไม่ได้แล้ว');
+    if (![STATUS.PENDING, STATUS.CONFIRMED].includes(r.v[K.status])) throw new Error('นัดนี้ยกเลิกไม่ได้แล้ว');
     setCells_(r.row, { [K.status]: STATUS.CANCELLED, [K.cancelled]: nowStr_() });
     const b = toBooking_(r.v);
-    const late = hoursUntil_(b) < 24;
-    push_(uid, [{ type: 'text', text: `ยกเลิกนัด ${b.id} (${thaiDate_(b.date)} ${b.start} น.) เรียบร้อยแล้ว` +
-      (late ? '\nเนื่องจากยกเลิกภายใน 24 ชม. ก่อนนัด มัดจำจะไม่ได้รับคืนตามเงื่อนไขร้าน' : '') }]);
-    return { ok: true, late };
+    push_(uid, [card_(MSG.cancelled, b, [['จองใหม่', LIFF_URL + '?page=book']])]);
+    return { ok: true, late: (startMs_(b) - Date.now()) / 3600000 < 24 };
   } finally {
     lock.releaseLock();
   }
 }
 
 function reschedule_(uid, b) {
+  const r = findOwn_(uid, b.id);
+  return moveBooking_(r, b.date, b.time, false);
+}
+
+function moveBooking_(r, date, time, byShop) {
+  if (![STATUS.PENDING, STATUS.CONFIRMED].includes(r.v[K.status])) throw new Error('นัดนี้เลื่อนไม่ได้แล้ว');
   const lock = LockService.getScriptLock();
   lock.waitLock(15000);
+  let rec;
   try {
-    const r = findOwn_(uid, b.id);
-    if (r.v[K.status] !== STATUS.CONFIRMED) throw new Error('นัดนี้เลื่อนไม่ได้แล้ว');
     const minutes = Number(r.v[K.duration]);
-    const start = validateSlot_(b.date, b.time, minutes);
+    const start = validateSlot_(date, time, minutes, byShop);
     const wanted = (STYLISTS.find(s => s.name === r.v[K.stylist]) || {}).id;
-    const stylist = pickStylist_(b.date, b.keepStylist === false ? 'any' : wanted, start, minutes, r.v[K.id]);
-    setCells_(r.row, { [K.date]: b.date, [K.start]: toHHMM_(start), [K.end]: toHHMM_(start + minutes), [K.stylist]: stylist.name, [K.reminded]: '' });
-    const rec = toBooking_(rows_().find(x => x.row === r.row).v);
-    push_(uid, [confirmFlex_(rec, 'BOOKING RESCHEDULED')]);
-    return { ok: true, booking: rec };
+    let stylist;
+    try { stylist = pickStylist_(date, wanted, start, minutes, r.v[K.id]); }
+    catch (e) { stylist = pickStylist_(date, 'any', start, minutes, r.v[K.id]); }
+    setCells_(r.row, { [K.date]: date, [K.start]: toHHMM_(start), [K.end]: toHHMM_(start + minutes),
+      [K.stylist]: stylist.name, [K.reminded]: '', [K.reminded2h]: '' });
+    rec = toBooking_(rows_().find(x => x.row === r.row).v);
   } finally {
     lock.releaseLock();
   }
+  if (r.v[K.uid]) push_(r.v[K.uid], [card_(MSG.rescheduled, rec, [['ดูนัด', LIFF_URL + '?page=my']])]);
+  return { ok: true, booking: rec };
 }
 
 function findOwn_(uid, id) {
@@ -330,15 +375,61 @@ function findOwn_(uid, id) {
   return r;
 }
 
-// ---------- reminders (time trigger ทุกวัน 18:00) ----------
+// ---------- scheduled jobs ----------
 
+/** 18:00 ทุกวัน: เตือนนัดพรุ่งนี้ */
 function sendReminders() {
   const tomorrow = Utilities.formatDate(new Date(Date.now() + 86400000), TZ, 'yyyy-MM-dd');
   rows_().forEach(r => {
     const v = r.v;
     if (v[K.date] !== tomorrow || v[K.status] !== STATUS.CONFIRMED || v[K.reminded] || !v[K.uid]) return;
-    push_(v[K.uid], [confirmFlex_(toBooking_(v), 'REMINDER · พรุ่งนี้มีนัด')]);
+    push_(v[K.uid], [card_(MSG.reminderD1, toBooking_(v), [['ดูนัด', LIFF_URL + '?page=my'], ['เลื่อนนัด', LIFF_URL + '?page=my']])]);
     setCells_(r.row, { [K.reminded]: nowStr_() });
+  });
+}
+
+/** ทุก 10 นาที: ปล่อยคิวที่ไม่แนบสลิปใน 30 นาที · เตือนก่อน 2 ชม. · ขอบคุณหลังใช้บริการ 3 ชม. */
+function tick() {
+  const now = Date.now();
+  const hour = Number(Utilities.formatDate(new Date(), TZ, 'H'));
+  rows_().forEach(r => {
+    const v = r.v, b = toBooking_(v);
+    if (!v[K.uid]) return;
+    if (v[K.status] === STATUS.PENDING && v[K.depositStatus] === DEPOSIT.UNPAID && now - tsMs_(v[K.created]) > SHOP.holdMin * 60000) {
+      setCells_(r.row, { [K.status]: STATUS.CANCELLED, [K.cancelled]: nowStr_() });
+      push_(v[K.uid], [card_(MSG.expired, b, [['จองใหม่', LIFF_URL + '?page=book']])]);
+      return;
+    }
+    const toStart = startMs_(b) - now;
+    // ช่วง 100–130 นาทีก่อนนัด (trigger ทุก 10 นาทีจะเจอ 1 ครั้ง) · นัดที่จองกระชั้นกว่านี้ไม่ต้องเตือน
+    if (v[K.status] === STATUS.CONFIRMED && !v[K.reminded2h] && toStart > 100 * 60000 && toStart <= 130 * 60000) {
+      push_(v[K.uid], [card_(MSG.reminder2h, b, [['เปิดแผนที่', SHOP.mapUrl]])]);
+      setCells_(r.row, { [K.reminded2h]: nowStr_() });
+    }
+    if (v[K.status] === STATUS.DONE && !v[K.afterSent] && v[K.finished] && now - tsMs_(v[K.finished]) >= 3 * 3600000
+        && now - tsMs_(v[K.finished]) < 48 * 3600000 && hour >= 9 && hour < 21) {
+      push_(v[K.uid], [card_(MSG.afterVisit, b, [['ให้คะแนน', `${LIFF_URL}?page=rate&id=${encodeURIComponent(b.id)}`]])]);
+      setCells_(r.row, { [K.afterSent]: nowStr_() });
+    }
+  });
+}
+
+/** 10:00 ทุกวัน: ชวนกลับมาเติมทรง (ตัด 5 สัปดาห์ / ทำสี 8 สัปดาห์) ถ้ายังไม่มีนัดใหม่ */
+function rebookNudge() {
+  const all = rows_();
+  const today = todayStr_();
+  all.forEach(r => {
+    const v = r.v;
+    if (v[K.status] !== STATUS.DONE || v[K.rebookSent] || !v[K.uid]) return;
+    const days = Math.max(0, ...SERVICES.filter(s => s.rebookDays && v[K.services].includes(s.th)).map(s => s.rebookDays));
+    if (!days) return;
+    const due = Utilities.formatDate(new Date(tsMs_(`${v[K.date]} 12:00`) + days * 86400000), TZ, 'yyyy-MM-dd');
+    if (due > today) return;
+    const hasNext = all.some(x => x.v[K.uid] === v[K.uid] && x.v[K.date] > v[K.date] && x.v[K.status] !== STATUS.CANCELLED);
+    if (!hasNext) {
+      push_(v[K.uid], [card_(MSG.rebook, toBooking_(v), [['จองซ้ำ', `${LIFF_URL}?page=rebook&id=${encodeURIComponent(v[K.id])}`]])]);
+    }
+    setCells_(r.row, { [K.rebookSent]: hasNext ? 'skip: มีนัดใหม่แล้ว' : nowStr_() });
   });
 }
 
@@ -349,6 +440,7 @@ function admin_(uid, b) {
     .split(',').map(s => s.trim()).filter(Boolean);
   if (!admins.includes(uid)) return { ok: false, error: 'NOT_ADMIN', userId: uid };
   const re = /^\d{4}-\d{2}-\d{2}$/;
+  const find = id => { const r = rows_().find(x => x.v[K.id] === id); if (!r) throw new Error('ไม่พบนัด'); return r; };
 
   if (b.action === 'admin_day') {
     if (!re.test(b.date)) throw new Error('วันที่ไม่ถูกต้อง');
@@ -356,39 +448,48 @@ function admin_(uid, b) {
   }
   if (b.action === 'admin_set_status') {
     if (!Object.values(STATUS).includes(b.status)) throw new Error('สถานะไม่ถูกต้อง');
-    const r = rows_().find(x => x.v[K.id] === b.id);
-    if (!r) throw new Error('ไม่พบนัด');
+    const r = find(b.id);
     const stamp = { [STATUS.ARRIVED]: K.arrived, [STATUS.SERVING]: K.started, [STATUS.DONE]: K.finished, [STATUS.CANCELLED]: K.cancelled }[b.status];
     const cells = { [K.status]: b.status };
     if (stamp !== undefined && !r.v[stamp]) cells[stamp] = nowStr_();
     if (b.status === STATUS.SERVING && !r.v[K.arrived]) cells[K.arrived] = nowStr_();
     setCells_(r.row, cells);
+    if (b.status === STATUS.CANCELLED && r.v[K.uid]) {
+      push_(r.v[K.uid], [card_(MSG.cancelled, toBooking_(r.v), [['จองใหม่', LIFF_URL + '?page=book']])]);
+    }
     return { ok: true };
   }
-  if (b.action === 'admin_deposit') {
-    const r = rows_().find(x => x.v[K.id] === b.id);
-    if (!r) throw new Error('ไม่พบนัด');
-    setCells_(r.row, { [K.depositStatus]: DEPOSIT.PAID });
+  if (b.action === 'admin_confirm') { // ตรวจสลิป / รับมัดจำแล้ว → ยืนยันนัด + ส่ง Flex
+    const r = find(b.id);
+    if (r.v[K.status] !== STATUS.PENDING) throw new Error('นัดนี้ไม่ได้อยู่ในสถานะรอมัดจำ');
+    setCells_(r.row, { [K.status]: STATUS.CONFIRMED, [K.depositStatus]: DEPOSIT.PAID, [K.confirmedAt]: nowStr_() });
+    const rec = toBooking_(rows_().find(x => x.row === r.row).v);
+    if (r.v[K.uid]) push_(r.v[K.uid], [confirmFlex_(rec)]);
     return { ok: true };
+  }
+  if (b.action === 'admin_reschedule') {
+    if (!re.test(b.date)) throw new Error('วันที่ไม่ถูกต้อง');
+    return moveBooking_(find(b.id), b.date, b.time, true);
   }
   if (b.action === 'admin_book') { // Walk-in / โทรจอง
     const name = String(b.name || '').trim().slice(0, 50);
     if (!name) throw new Error('กรุณากรอกชื่อ');
+    if (!re.test(b.date)) throw new Error('วันที่ไม่ถูกต้อง');
     const len = LENGTHS.some(l => l.code === b.length) ? b.length : 'M';
     const q = quote_(b.services, len);
-    const start = toMin_(b.time);
+    const start = validateSlot_(b.date, b.time, q.minutes, true);
     const lock = LockService.getScriptLock();
     lock.waitLock(15000);
     try {
       const stylist = pickStylist_(b.date, b.stylist, start, q.minutes);
       const v = new Array(HEADERS.length).fill('');
       Object.assign(v, {
-        [K.created]: nowStr_(), [K.id]: `MH-${b.date.slice(5, 7)}${b.date.slice(8, 10)}-${Math.floor(Math.random() * 9000) + 1000}`,
-        [K.date]: b.date, [K.start]: toHHMM_(start), [K.end]: toHHMM_(start + q.minutes), [K.duration]: String(q.minutes),
-        [K.stylist]: stylist.name, [K.services]: q.svcs.map(s => s.th).join(', '), [K.length]: len, [K.price]: String(q.price),
+        [K.created]: nowStr_(), [K.id]: newId_(b.date), [K.date]: b.date, [K.start]: toHHMM_(start),
+        [K.end]: toHHMM_(start + q.minutes), [K.duration]: String(q.minutes), [K.stylist]: stylist.name,
+        [K.services]: q.svcs.map(s => s.th).join(' + '), [K.length]: len, [K.price]: String(q.price),
         [K.deposit]: '0', [K.depositStatus]: DEPOSIT.NONE, [K.status]: STATUS.CONFIRMED, [K.name]: name,
         [K.phone]: String(b.phone || '').replace(/\D/g, ''), [K.pronoun]: 'ไม่ระบุ', [K.note]: String(b.note || '').slice(0, 300),
-        [K.channel]: b.channel === 'โทรจอง' ? 'โทรจอง' : 'Walk-in',
+        [K.channel]: b.channel === 'โทรจอง' ? 'โทรจอง' : 'Walk-in', [K.confirmedAt]: nowStr_(),
       });
       appendRow_(v);
     } finally {
@@ -406,24 +507,46 @@ function admin_(uid, b) {
   throw new Error('unknown admin action');
 }
 
-// ---------- Flex message ----------
+// ---------- LINE messages ----------
 
-function confirmFlex_(b, headline) {
+function fill_(tpl, b) {
+  const map = { 'ชื่อ': b.name, 'วันที่': thaiDate_(b.date), 'เวลา': b.start, 'ช่าง': b.stylist,
+    'บริการ': b.services, 'รหัสจอง': b.id, 'ลิงก์จอง': LIFF_URL };
+  return tpl.replace(/\{(ชื่อ|วันที่|เวลา|ช่าง|บริการ|รหัสจอง|ลิงก์จอง)\}/g, (_, k) => map[k] || '');
+}
+
+/** ข้อความสั้นแบบการ์ด: ข้อความตามเทมเพลต + ปุ่มลิงก์ (altText = ข้อความเดียวกัน) */
+function card_(tpl, b, buttons) {
+  const text = fill_(tpl, b);
+  return {
+    type: 'flex', altText: text.slice(0, 400),
+    contents: {
+      type: 'bubble', size: 'kilo',
+      body: { type: 'box', layout: 'vertical', paddingAll: '18px', contents: [
+        { type: 'text', text, wrap: true, size: 'sm', color: '#1B2533' }] },
+      footer: { type: 'box', layout: 'horizontal', spacing: 'sm', contents: buttons.map(([label, uri], i) => ({
+        type: 'button', height: 'sm', style: i === 0 ? 'primary' : 'secondary', color: i === 0 ? '#5A7FA8' : undefined,
+        action: { type: 'uri', label, uri } })) },
+    },
+  };
+}
+
+/** Flex ยืนยันการจอง (altText = ข้อความยืนยันตามเทมเพลต) */
+function confirmFlex_(b) {
   const row = (k, v) => ({
     type: 'box', layout: 'horizontal', contents: [
       { type: 'text', text: k, size: 'sm', color: '#6B7686', flex: 2 },
       { type: 'text', text: v || '-', size: 'sm', color: '#1B2533', flex: 5, wrap: true },
     ],
   });
-  const deposit = b.deposit > 0 ? `฿${b.deposit} · ${b.depositStatus}` : b.depositStatus;
   return {
-    type: 'flex', altText: `${headline} · ${thaiDate_(b.date)} ${b.start} น.`,
+    type: 'flex', altText: fill_(MSG.confirmed, b).slice(0, 400),
     contents: {
       type: 'bubble', size: 'mega',
       header: {
         type: 'box', layout: 'vertical', backgroundColor: '#1E2B3C', paddingAll: '18px', spacing: 'sm', contents: [
           { type: 'image', url: SITE + 'assets/logo-dark.png', size: 'full', aspectRatio: '4:1', aspectMode: 'fit' },
-          { type: 'text', text: '✓ ' + headline, color: '#9DB7D5', size: 'xs', align: 'center', weight: 'bold' },
+          { type: 'text', text: '✓ BOOKING CONFIRMED', color: '#9DB7D5', size: 'xs', align: 'center', weight: 'bold' },
         ],
       },
       body: {
@@ -432,13 +555,14 @@ function confirmFlex_(b, headline) {
           { type: 'text', text: `${b.start} – ${b.end} น.`, size: 'lg', weight: 'bold', color: '#5A7FA8' },
           { type: 'separator', margin: 'lg' },
           { type: 'box', layout: 'vertical', spacing: 'sm', margin: 'lg', contents: [
-            row('ช่าง', b.stylist), row('บริการ', b.services), row('มัดจำ', deposit), row('รหัส', b.id)] },
+            row('ช่าง', b.stylist), row('บริการ', b.services), row('มัดจำ', `฿${b.deposit} · ${b.depositStatus}`), row('รหัส', b.id)] },
+          { type: 'text', text: 'เลื่อนนัดได้ฟรีก่อน 24 ชม. ผ่านเมนู MY BOOKING', size: 'xs', color: '#6B7686', wrap: true, margin: 'lg' },
         ],
       },
       footer: {
         type: 'box', layout: 'horizontal', spacing: 'sm', contents: [
-          { type: 'button', style: 'primary', color: '#5A7FA8', height: 'sm', action: { type: 'uri', label: 'ดูนัด · VIEW', uri: LIFF_URL + '?page=my' } },
-          { type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'ข้อมูลร้าน', uri: LIFF_URL + '?page=about' } },
+          { type: 'button', style: 'primary', color: '#5A7FA8', height: 'sm', action: { type: 'uri', label: 'ดูนัด', uri: LIFF_URL + '?page=my' } },
+          { type: 'button', style: 'secondary', height: 'sm', action: { type: 'uri', label: 'แผนที่', uri: SHOP.mapUrl } },
         ],
       },
     },
@@ -475,8 +599,7 @@ function rows_() {
 
 function appendRow_(v) {
   const sh = sheet_();
-  const range = sh.getRange(sh.getLastRow() + 1, 1, 1, HEADERS.length);
-  range.setNumberFormat('@').setValues([v]);
+  sh.getRange(sh.getLastRow() + 1, 1, 1, HEADERS.length).setNumberFormat('@').setValues([v]);
 }
 
 function setCells_(row, cells) {
@@ -489,26 +612,21 @@ function toBooking_(v, admin) {
     id: v[K.id], date: v[K.date], start: v[K.start], end: v[K.end], duration: Number(v[K.duration]),
     stylist: v[K.stylist], services: v[K.services], length: v[K.length], price: Number(v[K.price]),
     deposit: Number(v[K.deposit]), depositStatus: v[K.depositStatus], status: v[K.status], name: v[K.name],
-    visit: Number(v[K.visit]) || 0, channel: v[K.channel],
+    visit: Number(v[K.visit]) || 0, channel: v[K.channel], rating: Number(v[K.rating]) || 0,
   };
   if (admin) {
     Object.assign(b, {
       created: v[K.created], phone: v[K.phone], pronoun: v[K.pronoun], chem: v[K.chem], note: v[K.note],
       photos: v[K.photos] ? v[K.photos].split(' ') : [], slip: v[K.slip], arrived: v[K.arrived],
-      started: v[K.started], finished: v[K.finished], cancelled: v[K.cancelled],
+      started: v[K.started], finished: v[K.finished], cancelled: v[K.cancelled], confirmedAt: v[K.confirmedAt],
+      review: v[K.review],
     });
   }
   return b;
 }
 
-function hoursUntil_(b) {
-  const [y, m, d] = b.date.split('-').map(Number);
-  const start = new Date(Date.UTC(y, m - 1, d, 0, 0) + (toMin_(b.start) - 7 * 60) * 60000); // Asia/Bangkok = UTC+7
-  return (start - Date.now()) / 3600000;
-}
-
 function thaiDate_(ymd) {
-  const [y, m, d] = ymd.split('-').map(Number);
+  const [y, m, d] = String(ymd).split('-').map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
   const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
   const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
@@ -541,7 +659,7 @@ function push_(to, messages) {
   try {
     lineApi_('https://api.line.me/v2/bot/message/push', 'post', JSON.stringify({ to, messages }), 'application/json');
   } catch (err) {
-    console.error('push failed', err); // การจองสำเร็จแล้ว ไม่ให้ error ของ push ทำให้การจองล้ม
+    console.error('push failed', err); // งานหลักสำเร็จแล้ว ไม่ให้ error ของ push ทำให้ล้ม
   }
 }
 

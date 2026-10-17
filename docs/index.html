@@ -215,7 +215,9 @@ async function api(payload) {
 }
 
 const svcById = id => C.services.find(s => s.id === id);
-const priceOf = (s, len) => { const m = C.lengths.find(l => l.code === len).mult; return s.chem ? Math.round(s.price * m / 100) * 100 : s.price; };
+const priceOf = (s, len) => s.prices[len === 'XL' ? 'L' : (s.prices[len] ? len : 'M')];
+const priceTag = (s, len) => baht(priceOf(s, len)) + (s.from || len === 'XL' ? '+' : '');
+const splitSvc = str => String(str).split(/\s*[+,]\s*/).filter(Boolean);
 const quote = () => {
   const svcs = draft.services.map(svcById);
   return { svcs, minutes: svcs.reduce((a, s) => a + s.min, 0), price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
@@ -239,7 +241,7 @@ const ctaLabel = (th, en) => `${th}<small>${en}</small>`;
 function render() {
   window.scrollTo(0, 0);
   ({ book: renderBook, done: renderDone, my: renderMy, price: renderPrice, stylists: renderStylists,
-     lookbook: renderLookbook, about: renderAbout }[page] || renderBook)();
+     lookbook: renderLookbook, about: renderAbout, rate: renderRate, rebook: renderRebook }[page] || renderBook)();
 }
 function go(p, s) { page = p; if (s) step = s; render(); }
 
@@ -256,12 +258,13 @@ function stepService() {
   const q = quote();
   $('view').innerHTML = `${header(1, 'SERVICE')}
     <h1>วันนี้ทำอะไรดี?</h1>
-    <p class="lead">ผมคุณยาวแค่ไหน? ราคางานเคมีคิดตามความยาวผม (มาตรฐานสากล) ไม่แบ่งราคาตามเพศ</p>
+    <p class="lead">ผมคุณยาวแค่ไหน? ราคาคิดตามความยาวผม (มาตรฐานสากล) ไม่แบ่งราคาตามเพศ</p>
     <div class="seg">${C.lengths.map((l, i) => `<button data-len="${l.code}" class="${draft.length === l.code ? 'on' : ''}">
       <span class="len" style="height:${10 + i * 7}px"></span><span>${l.th}<small>${l.code}</small></span></button>`).join('')}</div>
+    ${(C.lengths.find(l => l.code === draft.length) || {}).note ? `<p class="lead" style="margin:10px 0 0">${esc(C.lengths.find(l => l.code === draft.length).note)}</p>` : ''}
     <div style="margin-top:8px">${C.services.map(s => `<button class="svc ${draft.services.includes(s.id) ? 'on' : ''}" data-svc="${s.id}">
       <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${s.min} MIN</small></span>
-      <span class="price">${baht(priceOf(s, draft.length))}</span></button>`).join('')}</div>`;
+      <span class="price">${priceTag(s, draft.length)}</span></button>`).join('')}</div>`;
   $('view').querySelectorAll('[data-len]').forEach(b => b.onclick = () => { draft.length = b.dataset.len; stepService(); });
   $('view').querySelectorAll('[data-svc]').forEach(b => b.onclick = () => {
     const id = b.dataset.svc;
@@ -363,7 +366,7 @@ function stepReview() {
   const q = quote();
   const r = draft.reschedule;
   const services = r ? `<div class="line"><span>${esc(r.services)}</span><span>${baht(r.price)}</span></div>`
-    : q.svcs.map(s => `<div class="line"><span>${esc(s.th)} · <span style="color:var(--muted)">${esc(s.en.toLowerCase())}</span></span><span>${baht(priceOf(s, draft.length))}</span></div>`).join('');
+    : q.svcs.map(s => `<div class="line"><span>${esc(s.th)} · <span style="color:var(--muted)">${esc(s.en.toLowerCase())}</span></span><span>${priceTag(s, draft.length)}</span></div>`).join('');
   const qrHtml = C.promptpay ? qrSvg(C.promptpay) : '<div class="hatch" style="width:100%;height:100%;display:grid;place-items:center">PROMPTPAY QR<br>· DEMO ·</div>';
   $('view').innerHTML = `${header(5, 'REVIEW')}
     <h1>${r ? 'ยืนยันการเลื่อนนัด' : 'เช็กก่อนยืนยัน'}</h1>
@@ -381,13 +384,14 @@ function stepReview() {
       <div class="body"><div class="qr">${qrHtml}</div>
         <div>${C.promptpay ? 'สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป' : '<b style="color:#fff">โหมดสาธิต ไม่ต้องโอนจริง</b><br>ร้านจริงจะให้สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป'}
           · หักออกจากค่าบริการวันจริง · เลื่อนนัดฟรีก่อน 24 ชม.</div></div>
-      <button class="slip" id="slipBtn">${draft.slip ? '✓ แนบสลิปแล้ว (แตะเพื่อเปลี่ยน)' : '⇪ แนบสลิปโอน / Upload slip' + (C.promptpay ? '' : ' (ไม่บังคับ)')}</button>
+      <button class="slip" id="slipBtn">${draft.slip ? '✓ แนบสลิปแล้ว (แตะเพื่อเปลี่ยน)' : '⇪ แนบสลิปโอน / Upload slip'}</button>
+      <p style="font-size:11.5px;color:#9DB7D5;margin:8px 0 0">แนบตอนนี้ หรือแนบทีหลังในเมนู MY BOOKING ภายใน ${C.shop.holdMin} นาที ไม่อย่างนั้นคิวจะถูกปล่อย</p>
     </div>`}
     <p class="lead" style="margin-top:14px">ราคาเป็นราคาประเมิน ช่างจะยืนยันราคาจริงหลังดูสภาพผมก่อนเริ่มงาน</p>
     <p class="err" id="rErr" hidden></p>`;
   if (!r) $('editSty').onclick = () => go('book', 2);
   if ($('slipBtn')) $('slipBtn').onclick = () => pickImage(img => { draft.slip = img; stepReview(); });
-  foot('', r ? ctaLabel('ยืนยันเลื่อนนัด', 'CONFIRM') : ctaLabel('ยืนยันการจอง', 'CONFIRM'), submit, C.promptpay && !r && !draft.slip);
+  foot('', r ? ctaLabel('ยืนยันเลื่อนนัด', 'CONFIRM') : ctaLabel('ยืนยันการจอง', 'CONFIRM'), submit);
 }
 
 async function submit() {
@@ -412,14 +416,32 @@ async function submit() {
   }
 }
 
+const statusLine = b => b.status === 'รอมัดจำ'
+  ? (/รอตรวจ/.test(b.depositStatus) ? 'PENDING · รอร้านตรวจสลิป' : 'PENDING · รอแนบสลิปมัดจำ')
+  : b.status === 'ยืนยันแล้ว' ? '✓ CONFIRMED' : esc(b.status);
+
 function renderDone(b, moved) {
   if (!b) return;
-  $('view').innerHTML = `<div class="done"><div class="tick frame">✓</div>
-    <h1>${moved ? 'เลื่อนนัดเรียบร้อย' : 'จองสำเร็จ'}</h1>
-    <p class="lead">เราส่งรายละเอียดไปในแชต LINE แล้ว และจะแจ้งเตือนอีกครั้งก่อนถึงนัด 1 วัน</p></div>
-    <div class="bk frame"><div class="cal"><small>${EN_DAY[parseYmd(b.date).getDay()]}</small><b>${parseYmd(b.date).getDate()}</b><small>${EN_MON[parseYmd(b.date).getMonth()]}</small></div>
-      <div class="info"><span class="st">✓ CONFIRMED · ${esc(b.id)}</span><big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div></div>`;
-  foot('', ctaLabel('ดูนัดของฉัน', 'MY BOOKING'), () => go('my'));
+  const pending = b.status === 'รอมัดจำ', slipped = /รอตรวจ/.test(b.depositStatus);
+  const d = parseYmd(b.date);
+  $('view').innerHTML = `<div class="done"><div class="tick frame">${pending && !slipped ? '…' : '✓'}</div>
+    <h1>${moved ? 'เลื่อนนัดเรียบร้อย' : pending ? 'ส่งคำขอจองแล้ว' : 'จองสำเร็จ'}</h1>
+    <p class="lead">${moved ? 'ส่งรายละเอียดนัดใหม่ไปในแชต LINE แล้ว'
+      : !pending ? 'ส่งรายละเอียดไปในแชต LINE แล้ว และจะเตือนอีกครั้งก่อนถึงนัด 1 วัน'
+      : slipped ? 'ได้รับสลิปแล้ว ร้านจะตรวจและส่งข้อความยืนยันการจองในแชต LINE'
+      : `แนบสลิปมัดจำภายใน ${C.shop.holdMin} นาที เพื่อล็อกคิวนี้ไว้`}</p></div>
+    <div class="bk frame"><div class="cal"><small>${EN_DAY[d.getDay()]}</small><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
+      <div class="info"><span class="st">${statusLine(b)} · ${esc(b.id)}</span><big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div></div>
+    <p class="err" id="dErr" hidden></p>`;
+  if (pending && !slipped) foot('', ctaLabel('แนบสลิปตอนนี้', 'UPLOAD SLIP'), () => uploadSlip(b, ok => { if (ok) renderDone({ ...b, depositStatus: 'แนบสลิปแล้ว · รอตรวจ' }, moved); }));
+  else foot('', ctaLabel('ดูนัดของฉัน', 'MY BOOKING'), () => go('my'));
+}
+
+function uploadSlip(b, cb) {
+  pickImage(async img => {
+    try { await api({ action: 'slip', id: b.id, slip: img }); my = null; cb(true); }
+    catch (e) { alert(e.message); cb(false); }
+  });
 }
 
 // ---------- MY BOOKINGS ----------
@@ -434,10 +456,12 @@ async function renderMy() {
   $('myBody').innerHTML = `<div class="tabs"><button data-tab="up" class="${myTab === 'up' ? 'on' : ''}">กำลังจะถึง (${up.length})</button>
       <button data-tab="past" class="${myTab === 'past' ? 'on' : ''}">ประวัติ (${past.length})</button></div>
     ${myTab === 'up' ? (up.length ? up.map(b => { const d = parseYmd(b.date); const left = daysLeft(b.date);
+      const unpaid = b.status === 'รอมัดจำ' && !/รอตรวจ/.test(b.depositStatus);
       return `<div class="bk frame"><div class="cal"><small>${EN_DAY[d.getDay()]}</small><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
-        <div class="info"><span class="st">✓ ${b.status === 'ยืนยันแล้ว' ? 'CONFIRMED' : esc(b.status)} · ${left === 0 ? 'วันนี้' : left === 1 ? 'พรุ่งนี้' : 'อีก ' + left + ' วัน'}</span>
+        <div class="info"><span class="st">${statusLine(b)} · ${left === 0 ? 'วันนี้' : left === 1 ? 'พรุ่งนี้' : 'อีก ' + left + ' วัน'}</span>
           <big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div>
-        ${b.status === 'ยืนยันแล้ว' ? `<div class="acts"><button data-move="${esc(b.id)}">เลื่อนนัด</button><button data-cal="${esc(b.id)}">ลงปฏิทิน</button><button class="danger" data-cancel="${esc(b.id)}">ยกเลิก</button></div>` : ''}</div>`; }).join('')
+        ${['ยืนยันแล้ว', 'รอมัดจำ'].includes(b.status) ? `<div class="acts">${unpaid ? `<button data-slip="${esc(b.id)}" style="color:var(--steel-d);font-weight:600">แนบสลิป</button>` : `<button data-cal="${esc(b.id)}">ลงปฏิทิน</button>`}
+          <button data-move="${esc(b.id)}">เลื่อนนัด</button><button class="danger" data-cancel="${esc(b.id)}">ยกเลิก</button></div>` : ''}</div>`; }).join('')
       : '<div class="empty">ยังไม่มีนัดที่กำลังจะถึง</div>')
     : (past.length ? `<span class="label">ล่าสุด · PAST</span>` + past.map(b => { const d = parseYmd(b.date);
       return `<div class="past"><div class="d"><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
@@ -466,22 +490,66 @@ async function renderMy() {
     btn.disabled = true;
     try { await api({ action: 'cancel', id: b.id }); my = null; renderMy(); } catch (e) { alert(e.message); btn.disabled = false; }
   });
-  $('myBody').querySelectorAll('[data-again]').forEach(btn => btn.onclick = () => {
-    const b = find(btn.dataset.again);
-    const ids = b.services.split(', ').map(n => (C.services.find(s => s.th === n) || {}).id).filter(Boolean);
-    draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: b.length || 'M', services: ids,
-      stylist: (C.stylists.find(s => s.name === b.stylist) || {}).id || 'any' };
-    go('book', 1);
+  $('myBody').querySelectorAll('[data-again]').forEach(btn => btn.onclick = () => rebookFrom(find(btn.dataset.again)));
+  $('myBody').querySelectorAll('[data-slip]').forEach(btn => btn.onclick = () =>
+    uploadSlip(find(btn.dataset.slip), ok => { if (ok) renderMy(); }));
+}
+
+/** จองซ้ำ: ได้บริการและช่างคนเดิม แล้วไปเลือกวัน-เวลาเลย */
+function rebookFrom(b) {
+  const ids = splitSvc(b.services).map(n => (C.services.find(s => s.th === n) || {}).id).filter(Boolean);
+  draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: b.length || 'M', services: ids,
+    stylist: (C.stylists.find(s => s.name === b.stylist) || {}).id || 'any' };
+  go('book', ids.length ? 3 : 1);
+}
+
+async function renderRebook() {
+  $('view').innerHTML = '<div class="loading">LOADING…</div>'; foot();
+  try { if (!my) my = await api({ action: 'my' }); } catch (e) { $('view').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  const b = [...my.upcoming, ...my.past].find(x => x.id === new URLSearchParams(location.search).get('id'));
+  if (b) rebookFrom(b); else go('book', 1);
+}
+
+// ---------- RATE ----------
+let rating = 0;
+async function renderRate() {
+  $('view').innerHTML = '<div class="loading">LOADING…</div>'; foot();
+  try { if (!my) my = await api({ action: 'my' }); } catch (e) { $('view').innerHTML = `<p class="err">${esc(e.message)}</p>`; return; }
+  const id = new URLSearchParams(location.search).get('id');
+  const b = my.past.find(x => x.id === id) || my.past.find(x => x.status === 'เสร็จสิ้น');
+  if (!b) { $('view').innerHTML = '<div class="empty">ไม่พบรายการที่ให้คะแนนได้</div>'; return; }
+  if (b.rating && !rating) rating = b.rating;
+  $('view').innerHTML = `<span class="label">REVIEW</span><h1>ทรงใหม่เป็นยังไงบ้าง?</h1>
+    <p class="lead">${thDate(b.date)} · ${esc(b.services)} กับ ${esc(b.stylist)}</p>
+    <div class="stars" style="display:flex;gap:8px;margin:18px 0">${[1, 2, 3, 4, 5].map(n => `<button data-star="${n}" class="frame" aria-label="${n} ดาว"
+      style="flex:1;aspect-ratio:1;border:1px solid var(--line);background:${n <= rating ? 'var(--steel)' : 'var(--card)'};color:${n <= rating ? '#fff' : 'var(--cross)'};font-size:28px">★</button>`).join('')}</div>
+    <label class="field-l" for="rText">เล่าเพิ่มเติม <em>(ไม่บังคับ)</em></label>
+    <textarea class="in" id="rText" maxlength="500" placeholder="ชอบอะไร หรืออยากให้ปรับอะไร"></textarea>
+    <p class="err" id="rErr" hidden></p>`;
+  $('view').querySelectorAll('[data-star]').forEach(s => s.onclick = () => { const t = $('rText').value; rating = Number(s.dataset.star); renderRate().then(() => { $('rText').value = t; }); });
+  foot('', ctaLabel('ส่งคะแนน', 'SUBMIT'), async () => {
+    if (!rating) { $('rErr').textContent = 'กรุณาเลือกคะแนน'; $('rErr').hidden = false; return; }
+    $('cta').disabled = true;
+    try {
+      await api({ action: 'rate', id: b.id, rating, review: $('rText').value });
+      my = null;
+      $('view').innerHTML = `<div class="done"><div class="tick frame">✓</div><h1>ขอบคุณสำหรับคะแนน</h1>
+        <p class="lead">ทิป: งดสระ 48 ชม. หลังทำเคมี สีจะติดทนกว่า</p></div>`;
+      foot('', ctaLabel('จองซ้ำ', 'REBOOK'), () => rebookFrom(b));
+    } catch (e) { $('rErr').textContent = e.message; $('rErr').hidden = false; $('cta').disabled = false; }
   });
 }
 
 // ---------- info pages ----------
 function renderPrice() {
+  const cols = ['S', 'M', 'L'];
   $('view').innerHTML = `<span class="label">PRICE LIST</span><h1>ราคาบริการ</h1>
-    <p class="lead">งานเคมีคิดราคาตามความยาวผม (S · M · L · XL) ไม่แบ่งราคาตามเพศ</p>
-    <table class="ptable"><tr><th>SERVICE</th>${C.lengths.map(l => `<th>${l.code}</th>`).join('')}</tr>
-      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${s.min} MIN</small></td>${C.lengths.map(l => `<td>${priceOf(s, l.code).toLocaleString('en-US')}</td>`).join('')}</tr>`).join('')}</table>
-    <p class="lead" style="margin-top:14px">S = สั้น · M = ประบ่า · L = ยาว · XL = ยาวมาก · ราคาเป็นบาท</p>`;
+    <p class="lead">ราคาเริ่มต้นตามความยาวผม (S สั้น · M ประบ่า · L ยาว) ไม่แบ่งราคาตามเพศ</p>
+    <table class="ptable"><tr><th>SERVICE</th>${cols.map(c => `<th>${c}</th>`).join('')}</tr>
+      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${s.min} MIN</small></td>${s.prices.S === s.prices.L
+        ? `<td colspan="3">${s.prices.S.toLocaleString('en-US')}${s.from ? '+' : ''}</td>`
+        : cols.map(c => `<td>${s.prices[c].toLocaleString('en-US')}</td>`).join('')}</tr>`).join('')}</table>
+    <p class="lead" style="margin-top:14px">ผมยาวพิเศษหรือหนามาก (XL) ช่างจะประเมินให้ก่อนเริ่มงาน · ราคาเป็นบาท</p>`;
   foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
 }
 function renderStylists() {
@@ -504,9 +572,12 @@ function renderAbout() {
       <div><span class="label">Hours</span><br>${esc(C.shop.hours)}</div>
       <div><span class="label">Address</span><br>${esc(C.shop.address)}</div>
       <div><span class="label">Phone</span><br>${esc(C.shop.phone)}</div>
-      <div><span class="label">Deposit & Cancel</span><br>มัดจำ ${baht(C.shop.deposit)} หักจากค่าบริการวันจริง · เลื่อน/ยกเลิกก่อน 24 ชม. ฟรี · ภายใน 24 ชม. ไม่คืนมัดจำ</div>
+      <div><span class="label">Deposit & Cancel</span><br>มัดจำ ${baht(C.shop.deposit)} หักจากค่าบริการวันจริง · แนบสลิปภายใน ${C.shop.holdMin} นาทีหลังจอง · เลื่อนนัดฟรีก่อน 24 ชม. · ยกเลิกก่อน 24 ชม. คืนมัดจำภายใน 3 วันทำการ</div>
       <div><span class="label">Privacy</span><br>ข้อมูลใช้เพื่อจัดการนัดหมายเท่านั้น ไม่เปิดเผยต่อบุคคลอื่น</div>
-    </div><p class="note">ร้านสมมติสำหรับโครงงาน Digital Transformation</p>`;
+    </div>
+    <button class="cta frame wide" id="mapBtn" style="width:100%;margin-top:16px;background:var(--navy)">เปิดแผนที่<small>MAP</small></button>
+    <p class="note">ร้านสมมติสำหรับโครงงาน Digital Transformation</p>`;
+  $('mapBtn').onclick = () => liff.openWindow({ url: C.shop.mapUrl, external: true });
   foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
 }
 
@@ -559,7 +630,7 @@ $('close').onclick = () => { if (liff.isInClient()) liff.closeWindow(); else go(
         }
       });
     const p = new URLSearchParams(location.search).get('page');
-    go(['book', 'my', 'price', 'stylists', 'lookbook', 'about'].includes(p) ? p : 'book', 1);
+    go(['book', 'my', 'price', 'stylists', 'lookbook', 'about', 'rate', 'rebook'].includes(p) ? p : 'book', 1);
   } catch (e) {
     $('view').innerHTML = `<p class="err">เปิดหน้าไม่สำเร็จ: ${esc(e.message)}</p>`;
   }

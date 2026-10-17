@@ -65,6 +65,8 @@
   .blk.เสร็จสิ้น { border-color: #9AA5B4; background: #ECEEF1; color: var(--muted); }
   .blk.ไม่มา { border-color: var(--red); background: #F6E3E1; }
   .blk.ยกเลิก { display: none; }
+  .blk.รอมัดจำ { border-left-style: dashed; background: repeating-linear-gradient(135deg, #EEF2F7 0 6px, #F8F9FB 6px 12px); }
+  .pill.รอมัดจำ { color: var(--amber); }
   .pill { display: inline-block; font: 500 10.5px var(--mono); padding: 2px 8px; border: 1px solid currentColor; letter-spacing: .5px; }
   .pill.ยืนยันแล้ว { color: var(--steel-d); } .pill.มาถึงแล้ว { color: var(--amber); } .pill.รับบริการ { color: var(--green); }
   .pill.เสร็จสิ้น { color: var(--muted); } .pill.ไม่มา, .pill.ยกเลิก { color: var(--red); }
@@ -191,6 +193,7 @@ const toMin = hm => Number(hm.slice(0, 2)) * 60 + Number(hm.slice(3, 5));
 const baht = n => '฿' + Math.round(n).toLocaleString('en-US');
 const ROW = 36, STEP = 30;
 const NEXT = {
+  'รอมัดจำ': [['ยกเลิก', 'ยกเลิกนัด', 'btn warn']],
   'ยืนยันแล้ว': [['มาถึงแล้ว', 'มาถึงแล้ว', 'btn'], ['ไม่มา', 'ไม่มา', 'btn warn'], ['ยกเลิก', 'ยกเลิกนัด', 'btn warn']],
   'มาถึงแล้ว': [['รับบริการ', 'เริ่มบริการ', 'btn'], ['ไม่มา', 'ไม่มา', 'btn warn']],
   'รับบริการ': [['เสร็จสิ้น', 'เสร็จสิ้น', 'btn dark']],
@@ -223,7 +226,7 @@ async function loadDay() {
     ['BOOKINGS', live.length, closed ? 'ร้านปิดวันนี้' : ''], ['ARRIVED / IN CHAIR', n('มาถึงแล้ว') + n('รับบริการ'), ''],
     ['DONE', n('เสร็จสิ้น'), ''], ['NO-SHOW', n('ไม่มา'), ''], ['CANCELLED', n('ยกเลิก'), ''],
     ['EST. REVENUE', baht(live.filter(b => b.status !== 'ไม่มา').reduce((s, b) => s + b.price, 0)), 'ราคาประเมิน'],
-    ['SLIP TO CHECK', dayRows.filter(b => /รอตรวจ/.test(b.depositStatus) && b.status !== 'ยกเลิก').length, 'มัดจำรอตรวจ'],
+    ['DEPOSIT PENDING', n('รอมัดจำ'), `สลิปรอตรวจ ${dayRows.filter(b => b.status === 'รอมัดจำ' && /รอตรวจ/.test(b.depositStatus)).length}`],
   ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
 
   const open = C.shop.open, close = C.shop.close, rows = (close - open) / STEP;
@@ -262,8 +265,12 @@ function openDrawer(id) {
       <span>สลิป</span><div>${b.slip ? `<a href="${esc(b.slip)}" target="_blank">เปิดสลิป ↗</a>` : '–'}</div>
       <span>ลูกค้า</span><div>${b.channel}${b.channel === 'LINE' ? (b.visit > 1 ? ` · มาครั้งที่ ${b.visit}` : ' · ลูกค้าใหม่') : ''}</div>
       <span>จองเมื่อ</span><div>${esc(b.created)}</div>
+      ${b.rating ? `<span>คะแนน</span><div>${'★'.repeat(b.rating)}${'☆'.repeat(5 - b.rating)} ${esc(b.review || '')}</div>` : ''}
     </div>
-    <div class="acts">${acts}${/รอตรวจ/.test(b.depositStatus) ? '<button class="btn ghost" id="payOk">✓ ตรวจสลิปแล้ว</button>' : ''}</div>`;
+    <div class="acts">${b.status === 'รอมัดจำ' ? '<button class="btn" id="payOk">✓ รับมัดจำแล้ว · ยืนยันนัด</button>' : ''}${acts}</div>
+    ${['รอมัดจำ', 'ยืนยันแล้ว'].includes(b.status) ? `<div style="margin-top:18px;border-top:1px solid var(--line);padding-top:14px">
+      <h2>เลื่อนนัด</h2><div class="row"><input type="date" id="mvDate" value="${esc(b.date)}"><select id="mvTime">${timeOptions(b.start)}</select>
+      <button class="btn ghost" id="mvBtn">เลื่อน</button></div><p class="err" id="mvErr"></p></div>` : ''}`;
   $('drawer').hidden = $('shade').hidden = false;
   $('dx').onclick = closeDrawer;
   $('drawer').querySelectorAll('[data-to]').forEach(btn => btn.onclick = async () => {
@@ -273,8 +280,19 @@ function openDrawer(id) {
     catch (e) { alert(e.message); btn.disabled = false; }
   });
   if ($('payOk')) $('payOk').onclick = async () => {
-    try { await adminApi({ action: 'admin_deposit', id: b.id }); closeDrawer(); await loadDay(); } catch (e) { alert(e.message); }
+    $('payOk').disabled = true;
+    try { await adminApi({ action: 'admin_confirm', id: b.id }); closeDrawer(); await loadDay(); } catch (e) { alert(e.message); $('payOk').disabled = false; }
   };
+  if ($('mvBtn')) $('mvBtn').onclick = async () => {
+    $('mvBtn').disabled = true; $('mvErr').textContent = '';
+    try { await adminApi({ action: 'admin_reschedule', id: b.id, date: $('mvDate').value, time: $('mvTime').value }); closeDrawer(); await loadDay(); }
+    catch (e) { $('mvErr').textContent = e.message; $('mvBtn').disabled = false; }
+  };
+}
+function timeOptions(sel) {
+  const t = [];
+  for (let m = C.shop.open; m < C.shop.close; m += STEP) { const x = `${pad(Math.floor(m / 60))}:${pad(m % 60)}`; t.push(`<option ${x === sel ? 'selected' : ''}>${x}</option>`); }
+  return t.join('');
 }
 function closeDrawer() { $('drawer').hidden = $('shade').hidden = true; }
 $('shade').onclick = closeDrawer;
@@ -327,6 +345,8 @@ function stats(rows, from, to) {
     booked: live.filter(b => b.status !== 'ไม่มา').reduce((s, b) => s + b.price, 0),
     util: capacity ? live.reduce((s, b) => s + b.duration, 0) / capacity * 100 : 0,
     lead: lead.length ? lead.reduce((a, b) => a + b, 0) / lead.length : null,
+    csat: (r => r.length ? r.reduce((a, b) => a + b, 0) / r.length : null)(rows.map(b => b.rating).filter(Boolean)),
+    rated: rows.filter(b => b.rating).length,
   };
 }
 function delta(c, p, lowerBetter) {
@@ -357,12 +377,13 @@ async function loadReport(p) {
     ['BOOKED VALUE', baht(c.booked), '<small>มูลค่านัดทั้งหมด</small>'],
     ['CHAIR UTILIZATION', c.util.toFixed(0) + '%', delta(c.util, v.util)],
     ['AVG LEAD TIME', c.lead == null ? '–' : c.lead.toFixed(1) + ' วัน', '<small>จองล่วงหน้าเฉลี่ย</small>'],
+    ['SATISFACTION', c.csat == null ? '–' : c.csat.toFixed(1) + ' / 5', `<small>จาก ${c.rated} รีวิว</small>`],
   ].map(([k, val, s]) => `<div class="kpi"><span>${k}</span><b>${val}</b>${s}</div>`).join('');
 
   const live = reportRows.filter(b => b.status !== 'ยกเลิก');
   const tbl = (head, body) => body.length ? `<table><tr>${head.map(h => `<th class="${h[1] || ''}">${h[0]}</th>`).join('')}</tr>${body.join('')}</table>` : '<p class="empty">ไม่มีข้อมูลในช่วงนี้</p>';
   const svc = {};
-  live.forEach(b => b.services.split(', ').forEach(s => { svc[s] = (svc[s] || 0) + 1; }));
+  live.forEach(b => b.services.split(/\s*[+,]\s*/).forEach(s => { svc[s] = (svc[s] || 0) + 1; }));
   $('rServices').innerHTML = tbl([['SERVICE'], ['COUNT', 'n'], ['SHARE', 'n']],
     Object.entries(svc).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><td>${esc(k)}</td><td class="n">${n}</td><td class="n">${(n / live.length * 100).toFixed(0)}%</td></tr>`));
   const cap = openDays(from, to) * (C.shop.close - C.shop.open);
@@ -385,7 +406,7 @@ async function loadReport(p) {
 $('presets').onclick = e => { if (e.target.dataset.p) loadReport(e.target.dataset.p).catch(x => alert(x.message)); };
 $('print').onclick = () => window.print();
 $('csv').onclick = () => {
-  const cols = ['date', 'start', 'end', 'id', 'name', 'phone', 'stylist', 'services', 'length', 'price', 'deposit', 'depositStatus', 'status', 'channel', 'visit', 'created', 'arrived', 'started', 'finished', 'cancelled', 'chem', 'note'];
+  const cols = ['date', 'start', 'end', 'id', 'name', 'phone', 'stylist', 'services', 'length', 'price', 'deposit', 'depositStatus', 'status', 'channel', 'visit', 'created', 'arrived', 'started', 'finished', 'cancelled', 'chem', 'note', 'rating', 'review'];
   const cell = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const csv = '﻿' + [cols.join(','), ...reportRows.map(r => cols.map(k => cell(r[k])).join(','))].join('\n');
   const a = document.createElement('a');
