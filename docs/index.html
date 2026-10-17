@@ -161,6 +161,11 @@
       $('refresh').addEventListener('click', () => refresh().catch(e => alert(e.message)));
       setInterval(() => { if (!$('ticket').hidden) refresh().catch(() => {}); }, 30000);
     } catch (err) {
+      // เปิดนอกแอป LINE แล้ว ID token เก่าหมดอายุ: ล็อกอินใหม่ 1 ครั้ง
+      if (!liff.isInClient() && /หมดอายุ/.test(err.message) && !sessionStorage.getItem('relogin')) {
+        sessionStorage.setItem('relogin', '1');
+        liff.logout(); liff.login(); return;
+      }
       show('loading', false);
       $('fatal').textContent = 'เปิดหน้าลงคิวไม่สำเร็จ: ' + err.message;
       show('fatal');
