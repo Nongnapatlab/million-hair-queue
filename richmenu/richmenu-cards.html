@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #E9EDF3; --card: #FCFDFB; --ink: #14294A; --muted: #5B6B80; --accent: #E08A2E; --accent-ink: #B4641A; }
+  :root.rose { --bg: #F7E9EE; --card: #FFFDFD; --ink: #2B1A22; --muted: #7A6670; --accent: #D0628C; --accent-ink: #B04A72; }
+  html, body { margin: 0; width: 2500px; height: 1686px; overflow: hidden; }
+  body { background: var(--bg); font-family: 'Prompt', sans-serif; color: var(--ink); }
+  .wrap { box-sizing: border-box; width: 2500px; height: 1686px; padding: 48px; display: grid;
+    grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 48px 48px; }
+  .card { background: var(--card); border-radius: 56px; box-shadow: 0 12px 40px rgba(20, 41, 74, .10);
+    display: flex; align-items: center; justify-content: center; }
+  .hero { grid-column: span 3; gap: 72px; }
+  .small { flex-direction: column; gap: 40px; }
+  svg { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .hero svg { width: 300px; height: 300px; }
+  .small svg { width: 230px; height: 230px; }
+  .title { font-size: 168px; font-weight: 600; line-height: 1; }
+  .sub { font-size: 64px; color: var(--muted); margin-top: 28px; font-weight: 500; }
+  .tap { font-size: 56px; color: var(--accent-ink); margin-top: 20px; font-weight: 600; }
+  .label { font-size: 100px; font-weight: 600; }
+</style>
+<script>if (location.search.includes('rose')) document.documentElement.classList.add('rose');</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="card hero">
+    <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1 20 20M8.1 15.9 20 4"/></svg>
+    <div>
+      <div class="title">ลงคิว / เช็คคิว</div>
+      <div class="sub">Million Hair · หนึ่งในล้าน ไม่ต้องรอ</div>
+      <div class="tap">แตะเพื่อลงคิว ›</div>
+    </div>
+  </div>
+  <div class="card small">
+    <svg viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/><circle cx="7.5" cy="7.5" r="1.3"/></svg>
+    <div class="label">บริการ & ราคา</div>
+  </div>
+  <div class="card small">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+    <div class="label">ช่วงคนน้อย</div>
+  </div>
+  <div class="card small">
+    <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+    <div class="label">ข้อมูลร้าน</div>
+  </div>
+</div>
+</body>
+</html>
