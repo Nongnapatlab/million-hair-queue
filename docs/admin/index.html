@@ -99,7 +99,43 @@
   .form label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
   .form .wide { grid-column: span 4; }
   .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--ink); font-size: 13px; }
+  .miles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .mile { background: var(--navy); color: #F3F3F1; padding: 14px 16px; }
+  .mile b { display: block; font: 700 30px var(--en); }
+  .mile span { font-size: 13px; color: #9DB7D5; }
+  .mile.past { opacity: .5; }
+  .vbars { display: flex; align-items: flex-end; gap: 3px; height: 150px; border-bottom: 1px solid var(--line); }
+  .vbars div { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; min-width: 0; }
+  .vbars i { width: 100%; background: var(--steel); min-height: 2px; display: block; }
+  .vbars .fut i { background: #9DB7D5; }
+  .vbars .now i { background: var(--navy); }
+  .vbars em { font: 500 10px var(--mono); font-style: normal; color: var(--muted); margin-bottom: 2px; }
+  .vaxis { display: flex; gap: 3px; font: 500 9.5px var(--mono); color: var(--muted); margin-top: 4px; }
+  .vaxis span { flex: 1; text-align: center; min-width: 0; overflow: hidden; }
+  .li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .li:last-child { border-bottom: 0; }
+  .li small { color: var(--muted); }
+  .people { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .person { background: var(--card); border: 1px solid var(--line); padding: 12px 14px; }
+  .person .r { display: flex; justify-content: space-between; } .person small { font: 500 12px var(--mono); color: var(--muted); }
+  .pbar { height: 6px; background: var(--steel-soft); margin-top: 8px; } .pbar i { display: block; height: 100%; background: var(--steel); }
+  .phase { margin-top: 22px; }
+  .phase h2 { border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+  .tcols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 18px; }
+  .tcols h3 { font: 500 11px var(--mono); letter-spacing: 1.5px; color: var(--muted); margin: 10px 0 2px; }
+  .task { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: start; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .task input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--steel); }
+  .task small { display: block; color: var(--muted); font-size: 12px; }
+  .task.done span.tt { color: var(--muted); text-decoration: line-through; }
+  .task.late small.due { color: var(--red); }
+  .task .del { border: 0; background: none; color: var(--muted); font-size: 16px; padding: 0 4px; }
+  .linkgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .linkgrid a { display: block; background: var(--card); border: 1px solid var(--line); padding: 14px 16px; color: var(--ink); text-decoration: none; }
+  .linkgrid a:hover { border-color: var(--steel); }
+  .linkgrid a b { display: block; } .linkgrid a small { color: var(--muted); font-size: 12px; word-break: break-all; }
+  .guide ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13.5px; }
   @media (max-width: 900px) {
+    .miles, .people, .tcols { grid-template-columns: 1fr; }
     .layout { grid-template-columns: 1fr; } aside { flex-direction: row; flex-wrap: wrap; } aside .grp, aside .me { display: none; }
     main { padding: 16px; } .grid2, .form { grid-template-columns: 1fr; } .form .wide { grid-column: auto; }
   }
@@ -112,17 +148,90 @@
 <div class="layout" id="app" hidden>
   <aside>
     <div class="logo">MILLION<small>✦ HAIR STUDIO ✦</small></div>
+    <div class="grp">OVERVIEW</div>
+    <a data-view="dash" class="on">Dashboard</a>
     <div class="grp">OPERATIONS</div>
-    <a data-view="sched" class="on">ตารางนัด</a>
+    <a data-view="sched">ตารางนัด</a>
     <a data-view="report">รายงาน</a>
-    <div class="grp">LINKS</div>
-    <a href="../" target="_blank">หน้าลูกค้า (LIFF) ↗</a>
+    <div class="grp">TEAM</div>
+    <a data-view="team">งานทีม</a>
+    <a data-view="links">ลิงก์ & คู่มือ</a>
     <div class="me" id="me"></div>
   </aside>
 
   <main>
+    <!-- Dashboard -->
+    <section data-page="dash">
+      <div class="top">
+        <div><div class="eyebrow">OVERVIEW · DX PROJECT</div><h1>ภาพรวมโปรเจกต์</h1><div style="color:var(--muted)" id="dashDate"></div></div>
+        <button class="btn ghost noprint" id="dashReload">↻ รีเฟรช</button>
+      </div>
+      <div class="miles" id="miles"></div>
+      <div class="kpis" id="dashKpis"><p class="empty">กำลังโหลด…</p></div>
+      <div class="grid2">
+        <div class="card"><h2>นัดต่อวัน · 14 วันที่ผ่านมา → 7 วันข้างหน้า</h2><div id="dashChart"></div></div>
+        <div class="card"><h2>งานทีมที่ใกล้กำหนด</h2><div id="dashTasks"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h2>นัดถัดไป</h2><div id="dashNext"></div></div>
+        <div class="card"><h2>ต้องจัดการ</h2><div id="dashTodo"></div></div>
+      </div>
+    </section>
+
+    <!-- งานทีม -->
+    <section data-page="team" hidden>
+      <div class="top">
+        <div><div class="eyebrow">TEAM · TASKS</div><h1>งานทีม</h1><div style="color:var(--muted)">ติ๊กเมื่อทำเสร็จ · ทั้งทีมเห็นสถานะเดียวกัน (เก็บใน Google Sheet แท็บ Tasks)</div></div>
+        <div class="row noprint"><span style="color:var(--muted);font-size:13px">ฉันคือ</span>
+          <select id="whoami"><option value="ney">นงนภัส</option><option value="pom">พรหมพิริยะ</option></select></div>
+      </div>
+      <div class="people" id="people"></div>
+      <div id="taskList"><p class="empty">กำลังโหลด…</p></div>
+      <div class="card noprint" style="margin-top:16px">
+        <h2>เพิ่มงาน</h2>
+        <form class="form" id="taskAdd">
+          <label class="wide">ชื่องาน<input id="tTitle" maxlength="200" required></label>
+          <label>ผู้รับผิดชอบ<select id="tOwner"><option value="ney">นงนภัส</option><option value="pom">พรหมพิริยะ</option><option value="claude">Claude</option></select></label>
+          <label>กำหนดส่ง<input type="date" id="tDue"></label>
+          <label>ช่วง<select id="tPhase"></select></label>
+          <div class="row" style="align-items:end"><button class="btn" type="submit">+ เพิ่มงาน</button></div>
+        </form>
+        <p class="err" id="tErr"></p>
+      </div>
+    </section>
+
+    <!-- ลิงก์ & คู่มือ -->
+    <section data-page="links" hidden>
+      <div class="top"><div><div class="eyebrow">LINKS & GUIDES</div><h1>ลิงก์และคู่มือ</h1></div></div>
+      <div class="linkgrid" id="linkGrid"></div>
+      <div class="grid2" style="margin-top:16px">
+        <div class="card guide"><h2>อัปเดตโค้ด Apps Script</h2><ol>
+          <li>บน Mac พิมพ์ใน Claude Code: <code>! pbcopy &lt; ~/Downloads/million-hair-queue/apps-script/Code.gs</code></li>
+          <li>เปิด Apps Script → คลิกช่องโค้ด → Cmd + A → Cmd + V → Cmd + S</li>
+          <li>เลือกฟังก์ชัน <code>setup</code> → ▶ Run</li>
+          <li>Deploy → Manage deployments → ✏️ → Version: <b>New version</b> → Deploy (ห้ามกด New deployment)</li></ol></div>
+        <div class="card guide"><h2>เพิ่มแอดมิน (เพื่อนในทีม)</h2><ol>
+          <li>ให้เพื่อนเปิดหน้านี้แล้วล็อกอิน LINE จะเห็น User ID (ขึ้นต้นด้วย U…)</li>
+          <li>Apps Script → ⚙️ Project Settings → Script properties → <code>ADMIN_USER_IDS</code></li>
+          <li>ต่อท้ายด้วยเครื่องหมายจุลภาค เช่น <code>Uaaa,Ubbb</code> → Save (ไม่ต้อง Deploy ใหม่)</li>
+          <li>แชร์ Google Sheet (Editor) และเพิ่มเพื่อนใน OA Manager → ตั้งค่า → สิทธิ์การเข้าถึง</li></ol></div>
+        <div class="card guide"><h2>เช็กลิสต์ทดสอบระบบ</h2><ol>
+          <li>จองจาก LINE (ไม่แนบสลิป) → ได้ข้อความ “ได้รับคำขอจอง”</li>
+          <li>ตารางนัด → กดนัด → “รับมัดจำแล้ว · ยืนยันนัด” → ลูกค้าได้ Flex ยืนยัน</li>
+          <li>กด มาถึงแล้ว → เริ่มบริการ → เสร็จสิ้น → ขึ้น “+แต้ม”</li>
+          <li>LINE → MY BOOKING → แต้มสะสม → เห็นแต้มและเลขสมาชิก</li>
+          <li>พิมพ์ “ราคา” ในแชต → ได้ตารางราคา</li></ol></div>
+        <div class="card guide"><h2>สคริปต์เดโม 5 นาที</h2><ol>
+          <li>เปิดแชต Million Hair บนมือถือ (ฉายจอ) → โชว์ rich menu</li>
+          <li>BOOK NOW → เลือกความยาวผม + บริการ → ช่าง → วัน-เวลา → รายละเอียด → ยืนยัน</li>
+          <li>สลับไปหลังบ้าน → นัดเด้งในตารางของช่าง → รับมัดจำ → Flex เด้งในแชต</li>
+          <li>กดเสร็จสิ้น → เปิด POINTS ให้เห็นแต้มเพิ่ม</li>
+          <li>ปิดด้วยหน้ารายงาน: no-show, การใช้เก้าอี้, ความพึงพอใจ</li></ol></div>
+      </div>
+    </section>
+
     <!-- ตารางนัด -->
-    <section data-page="sched">
+    <section data-page="sched" hidden>
       <div class="top">
         <div><div class="eyebrow">SCHEDULE</div><h1 id="dayTitle">ตารางนัด</h1></div>
         <div class="row noprint">
@@ -210,8 +319,132 @@ async function adminApi(p) { const d = await api(p); if (!d.ok) throw new Error(
 document.querySelectorAll('aside a[data-view]').forEach(a => a.onclick = () => {
   document.querySelectorAll('aside a[data-view]').forEach(x => x.classList.toggle('on', x === a));
   document.querySelectorAll('[data-page]').forEach(p => p.hidden = p.dataset.page !== a.dataset.view);
-  if (a.dataset.view === 'report' && !reportRows.length) loadReport('today');
+  const v = a.dataset.view;
+  if (v === 'report' && !reportRows.length) loadReport('today').catch(e => alert(e.message));
+  if (v === 'sched') loadDay().catch(e => alert(e.message));
+  if (v === 'dash') loadDash().catch(e => alert(e.message));
+  if (v === 'team') loadTasks().catch(e => alert(e.message));
+  if (v === 'links') renderLinks();
 });
+
+// ---------- dashboard ----------
+const MILES = [['2026-10-23', 'ความคืบหน้าครั้งที่ 2'], ['2026-10-30', 'ความคืบหน้าครั้งที่ 3'], ['2026-11-06', 'นำเสนอ 15 คะแนน']];
+const OWNER = { ney: 'นงนภัส', pom: 'พรหมพิริยะ', claude: 'Claude' };
+let links = null, tasks = [], phases = [];
+const daysTo = ymd => Math.round((parseYmd(ymd) - new Date(new Date().toDateString())) / 86400000);
+const thShort = ymd => parseYmd(ymd).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+const dueLabel = n => n > 1 ? `อีก ${n} วัน` : n === 1 ? 'พรุ่งนี้' : n === 0 ? 'วันนี้' : `เลยมา ${-n} วัน`;
+
+async function loadDash() {
+  const t = new Date(new Date().toDateString());
+  $('dashDate').textContent = thLong(t);
+  $('miles').innerHTML = MILES.map(([d, l]) => { const n = daysTo(d);
+    return `<div class="mile ${n < 0 ? 'past' : ''}"><b>${thShort(d)}</b><span>${esc(l)} · ${n < 0 ? 'ผ่านแล้ว' : dueLabel(n)}</span></div>`; }).join('');
+  const [d, tk] = await Promise.all([
+    adminApi({ action: 'admin_overview', from: ymd(addDays(t, -29)), to: ymd(addDays(t, 14)) }),
+    adminApi({ action: 'admin_tasks' }),
+  ]);
+  C = d.config; links = d.links; tasks = tk.tasks; phases = tk.phases;
+  const all = d.bookings, today = ymd(t);
+  const live = all.filter(b => b.status !== 'ยกเลิก');
+  const past30 = all.filter(b => b.date < today);
+  const done = past30.filter(b => b.status === 'เสร็จสิ้น'), ns = past30.filter(b => b.status === 'ไม่มา');
+  const rated = all.filter(b => b.rating);
+  const tDone = tasks.filter(x => x.done).length;
+  $('dashKpis').innerHTML = [
+    ['TODAY', live.filter(b => b.date === today).length, 'นัดวันนี้'],
+    ['NEXT 7 DAYS', live.filter(b => b.date > today && b.date <= ymd(addDays(t, 7))).length, 'นัดล่วงหน้า'],
+    ['DEPOSIT PENDING', all.filter(b => b.status === 'รอมัดจำ').length, 'รอยืนยันมัดจำ'],
+    ['NO-SHOW · 30D', done.length + ns.length ? Math.round(ns.length / (done.length + ns.length) * 100) + '%' : '–', `${ns.length} จาก ${done.length + ns.length} นัดที่ปิดแล้ว`],
+    ['REVENUE · 30D', baht(done.reduce((s, b) => s + b.price, 0)), 'จากนัดที่เสร็จสิ้น'],
+    ['SATISFACTION', rated.length ? (rated.reduce((s, b) => s + b.rating, 0) / rated.length).toFixed(1) + ' / 5' : '–', `${rated.length} รีวิว`],
+    ['MEMBERS', d.loyalty.members, `${d.loyalty.pointsIssued} แต้ม · โค้ดรอใช้ ${d.loyalty.vouchersOpen}`],
+    ['TEAM TASKS', `${tDone}/${tasks.length}`, 'งานทีมที่เสร็จแล้ว'],
+  ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b>${v}</b><small>${s}</small></div>`).join('');
+
+  const days = []; for (let i = -14; i <= 7; i++) days.push(ymd(addDays(t, i)));
+  const per = days.map(x => live.filter(b => b.date === x).length);
+  const max = Math.max(1, ...per);
+  $('dashChart').innerHTML = `<div class="vbars">${days.map((x, i) => `<div class="${x === today ? 'now' : x > today ? 'fut' : ''}" title="${thShort(x)}: ${per[i]} นัด">
+      ${per[i] ? `<em>${per[i]}</em>` : ''}<i style="height:${per[i] / max * 85}%"></i></div>`).join('')}</div>
+    <div class="vaxis">${days.map((x, i) => `<span>${i % 3 === 0 || x === today ? parseYmd(x).getDate() : ''}</span>`).join('')}</div>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">แท่งเข้ม = วันนี้ · แท่งอ่อน = นัดล่วงหน้า</p>`;
+
+  const open = tasks.filter(x => !x.done).sort((a, b) => (a.due || '9').localeCompare(b.due || '9')).slice(0, 6);
+  $('dashTasks').innerHTML = open.length ? open.map(x => `<div class="li"><span>${esc(x.title)}<br><small>${esc(OWNER[x.owner] || x.owner)}</small></span>
+    <small style="white-space:nowrap;${x.due && daysTo(x.due) < 0 ? 'color:var(--red)' : ''}">${x.due ? dueLabel(daysTo(x.due)) : '–'}</small></div>`).join('') : '<p class="empty">งานเสร็จครบแล้ว</p>';
+
+  const nowHm = new Date().toTimeString().slice(0, 5);
+  const next = live.filter(b => ['ยืนยันแล้ว', 'รอมัดจำ'].includes(b.status) && (b.date > today || (b.date === today && b.end >= nowHm)))
+    .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)).slice(0, 6);
+  $('dashNext').innerHTML = next.length ? next.map(b => `<div class="li"><span><b>${b.date === today ? 'วันนี้' : thShort(b.date)} ${b.start}</b> · ${esc(b.name)}<br>
+    <small>${esc(b.stylist)} · ${esc(b.services)}</small></span><span class="pill ${esc(b.status)}">${esc(b.status)}</span></div>`).join('') : '<p class="empty">ยังไม่มีนัดที่กำลังจะถึง</p>';
+
+  const todo = [
+    ...all.filter(b => b.status === 'รอมัดจำ' && /รอตรวจ/.test(b.depositStatus)).map(b => `สลิปรอตรวจ · ${esc(b.name)} (${thShort(b.date)} ${b.start})`),
+    ...all.filter(b => b.status === 'รอมัดจำ' && !/รอตรวจ/.test(b.depositStatus)).map(b => `รอลูกค้าแนบสลิป · ${esc(b.name)} (${thShort(b.date)} ${b.start})`),
+    ...all.filter(b => b.date < today && ['ยืนยันแล้ว', 'มาถึงแล้ว', 'รับบริการ'].includes(b.status)).map(b => `ยังไม่ปิดสถานะ · ${esc(b.name)} (${thShort(b.date)})`),
+  ];
+  $('dashTodo').innerHTML = todo.length ? todo.slice(0, 8).map(x => `<div class="li"><span>${x}</span></div>`).join('')
+    + `<p style="font-size:12px;color:var(--muted)">จัดการได้ที่เมนู ตารางนัด</p>` : '<p class="empty">ไม่มีอะไรค้าง</p>';
+}
+$('dashReload').onclick = () => loadDash().catch(e => alert(e.message));
+
+// ---------- team tasks ----------
+try { $('whoami').value = localStorage.getItem('mh_whoami') || 'ney'; } catch (e) {}
+$('whoami').onchange = () => { try { localStorage.setItem('mh_whoami', $('whoami').value); } catch (e) {} };
+
+async function loadTasks(data) {
+  const d = data || await adminApi({ action: 'admin_tasks' });
+  tasks = d.tasks; phases = d.phases;
+  $('tPhase').innerHTML = phases.map((p, i) => `<option value="${i}">${esc(p)}</option>`).join('');
+  $('people').innerHTML = ['ney', 'pom', 'claude'].map(w => { const t = tasks.filter(x => x.owner === w), n = t.filter(x => x.done).length;
+    return `<div class="person"><div class="r"><b>${OWNER[w]}</b><small>${n}/${t.length}</small></div><div class="pbar"><i style="width:${t.length ? n / t.length * 100 : 0}%"></i></div></div>`; }).join('');
+  const groups = [...phases, ...new Set(tasks.map(x => x.phase).filter(p => !phases.includes(p)))];
+  $('taskList').innerHTML = groups.map(ph => { const pt = tasks.filter(x => x.phase === ph); if (!pt.length) return '';
+    return `<div class="phase"><h2>${esc(ph)}</h2><div class="tcols">${['ney', 'pom', 'claude'].map(w => { const ts = pt.filter(x => x.owner === w);
+      return `<div><h3>${OWNER[w].toUpperCase()}</h3>${ts.length ? ts.map(x => { const late = !x.done && x.due && daysTo(x.due) < 0;
+        return `<label class="task ${x.done ? 'done' : ''} ${late ? 'late' : ''}"><input type="checkbox" data-task="${esc(x.id)}" ${x.done ? 'checked' : ''}>
+          <span><span class="tt">${esc(x.title)}</span><small class="due">${x.done ? `เสร็จ ${esc(x.at.slice(0, 16))} · ${esc(OWNER[x.by] || x.by)}` : x.due ? `กำหนด ${thShort(x.due)} · ${dueLabel(daysTo(x.due))}` : 'ไม่มีกำหนด'}</small></span>
+          <button type="button" class="del" data-del="${esc(x.id)}" aria-label="ลบงาน">×</button></label>`; }).join('') : '<p class="empty" style="padding:8px 0;text-align:left">–</p>'}</div>`; }).join('')}</div></div>`; }).join('');
+  $('taskList').querySelectorAll('[data-task]').forEach(cb => cb.onchange = async () => {
+    cb.disabled = true;
+    try { await loadTasks(await adminApi({ action: 'admin_task_set', id: cb.dataset.task, done: cb.checked, by: $('whoami').value })); }
+    catch (e) { alert(e.message); cb.checked = !cb.checked; cb.disabled = false; }
+  });
+  $('taskList').querySelectorAll('[data-del]').forEach(btn => btn.onclick = async ev => {
+    ev.preventDefault();
+    const x = tasks.find(t => t.id === btn.dataset.del);
+    if (!confirm(`ลบงาน “${x.title}”?`)) return;
+    try { await loadTasks(await adminApi({ action: 'admin_task_delete', id: x.id })); } catch (e) { alert(e.message); }
+  });
+}
+$('taskAdd').onsubmit = async e => {
+  e.preventDefault(); $('tErr').textContent = '';
+  try {
+    await loadTasks(await adminApi({ action: 'admin_task_add', title: $('tTitle').value, owner: $('tOwner').value, due: $('tDue').value, phase: $('tPhase').value }));
+    $('tTitle').value = ''; $('tDue').value = '';
+  } catch (err) { $('tErr').textContent = err.message; }
+};
+
+// ---------- links ----------
+function renderLinks() {
+  const L = links || {};
+  const items = [
+    ['หน้าลูกค้า (LINE)', 'https://liff.line.me/' + LIFF_ID, 'เปิดใน LINE เพื่อจองคิว'],
+    ['หน้าเว็บลูกค้า', '../', 'GitHub Pages · ใช้ทดสอบบนคอม'],
+    ['Google Sheet (ฐานข้อมูล)', L.sheet, 'Bookings · Points · Members · Tasks'],
+    ['Apps Script (backend)', L.script, 'แก้โค้ด · Deploy · Script properties'],
+    ['สลิปและรูปอ้างอิง', L.uploads, 'โฟลเดอร์ส่วนตัวใน Google Drive'],
+    ['LINE OA Manager', 'https://manager.line.biz/', 'ข้อความทักทาย · ตอบกลับอัตโนมัติ · แชต'],
+    ['LINE Developers', 'https://developers.line.biz/console/', 'Provider Million Hair Studio · LIFF · Token'],
+    ['GitHub repo', 'https://github.com/Nongnapatlab/million-hair-queue', 'โค้ดทั้งหมด · collaborator: Noeiibibi, Sauciiees'],
+    ['สไลด์นำเสนอ', 'https://claude.ai/artifact/9Sr5DMKYxiZMseqfW27b4T', 'DX Case Study · 19 หน้า'],
+  ];
+  $('linkGrid').innerHTML = items.map(([t, u, s]) => u
+    ? `<a href="${esc(u)}" target="_blank" rel="noopener"><b>${esc(t)} ↗</b><small>${esc(s)}</small></a>`
+    : `<a aria-disabled="true"><b>${esc(t)}</b><small>เปิดหน้า Dashboard ก่อนเพื่อโหลดลิงก์</small></a>`).join('');
+}
 
 // ---------- schedule ----------
 async function loadDay() {
@@ -443,7 +676,8 @@ $('csv').onclick = () => {
     }
     $('me').textContent = 'เข้าสู่ระบบ: ' + (await liff.getProfile()).displayName;
     $('gate').hidden = true; $('app').hidden = false;
-    await loadDay();
+    C = probe.config; dayRows = probe.bookings;
+    await loadDash();
     setInterval(() => { if (!document.querySelector('[data-page=sched]').hidden && $('drawer').hidden) loadDay().catch(() => {}); }, 30000);
   } catch (e) { $('gateMsg').innerHTML = `<span class="err">เปิดหน้าไม่สำเร็จ: ${esc(e.message)}</span>`; }
 })();

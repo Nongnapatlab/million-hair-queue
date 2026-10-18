@@ -87,6 +87,40 @@ const P = {}; ['ts', 'uid', 'name', 'type', 'points', 'bookingId', 'reward', 'co
 const MEMBERS_SHEET = 'Members';
 const MEMBERS_HEADERS = ['LINE User ID', 'Member No', 'Name', 'Joined'];
 
+// ---------- งานทีม (ใช้ในหน้าหลังบ้าน) ----------
+const TASKS_SHEET = 'Tasks';
+const TASK_HEADERS = ['ID', 'Phase', 'Owner', 'Title', 'Due', 'Done', 'Done By', 'Done At'];
+const PHASES = ['18–20 ต.ค. · ระบบพร้อม + เช็กตัวเลข', '21–23 ต.ค. · ความคืบหน้าครั้งที่ 2',
+  '23–30 ต.ค. · ทดสอบร้านจำลอง + ความคืบหน้าครั้งที่ 3', '31 ต.ค.–6 พ.ย. · เตรียมนำเสนอจริง'];
+const DEFAULT_TASKS = [ // [phase index, owner, title, due]
+  [0, 'ney', 'อัปเดต Apps Script เวอร์ชันล่าสุด → Run setup → Deploy New version', '2026-10-18'],
+  [0, 'ney', 'ตั้ง 5 ข้อความใน OA Manager (ทักทาย, จอง, ราคา, ที่อยู่, นอกเวลา)', '2026-10-19'],
+  [0, 'ney', 'ทดสอบครบ 1 รอบ: รอมัดจำ → ยืนยัน → เสร็จสิ้น → แต้ม → ตอบ “ราคา”', '2026-10-20'],
+  [0, 'ney', 'เพิ่มเพื่อนเป็นแอดมิน + แชร์ Google Sheet และ OA Manager', '2026-10-20'],
+  [0, 'pom', 'รับคำเชิญ GitHub (Sauciiees)', '2026-10-18'],
+  [0, 'pom', 'สำรวจราคาร้านทำผมแถวสุขุมวิท 3–5 ร้าน เทียบกับตารางราคาของเรา', '2026-10-20'],
+  [0, 'pom', 'หาแหล่งอ้างอิง: ราคาแผน LINE OA ปัจจุบัน และอัตรา no-show ร้านทำผม', '2026-10-20'],
+  [0, 'claude', 'แก้สไลด์ให้ตรงระบบล่าสุด: ราคาใหม่, 5 ข้อความ/นัด, ระบบแต้มย้ายมา “ทำแล้ว”', '2026-10-20'],
+  [1, 'ney', 'ซ้อมเดโมสด: จอง → Flex ในแชต → หลังบ้าน → แต้ม', '2026-10-22'],
+  [1, 'ney', 'เดโมสดในห้อง', '2026-10-23'],
+  [1, 'pom', 'ทบทวนสไลด์ฝั่งธุรกิจ (หน้า 2–7, 13–15) และเขียนบทพูด', '2026-10-22'],
+  [1, 'pom', 'นำเสนอสไลด์ความคืบหน้าครั้งที่ 2', '2026-10-23'],
+  [1, 'claude', 'ทำแบบฟอร์มจับเวลาการจอง และแบบสอบถามความพึงพอใจ', '2026-10-22'],
+  [2, 'ney', 'เล่นเป็นร้าน: ยืนยันมัดจำ กดสถานะ มาถึง/เริ่ม/เสร็จ/ไม่มา ทุกนัด', '2026-10-29'],
+  [2, 'ney', 'Export CSV รายงานย้อนหลัง 7 วัน ส่งให้ Claude', '2026-10-30'],
+  [2, 'pom', 'ชวนเพื่อน 15–20 คนจองจริงในระบบ', '2026-10-29'],
+  [2, 'pom', 'จับเวลา: จองผ่านแชตกับแอดมิน เทียบกับจองผ่าน LINE', '2026-10-29'],
+  [2, 'pom', 'ชวนให้คะแนนหลังใช้บริการ + แจกแบบสอบถาม', '2026-10-29'],
+  [2, 'pom', 'สรุปตาราง KPI ก่อน/หลัง และนำเสนอความคืบหน้าครั้งที่ 3', '2026-10-30'],
+  [2, 'claude', 'ใส่ตัวเลขจริงจาก CSV แทนสมมติฐานในสไลด์', '2026-10-30'],
+  [3, 'ney', 'อัดคลิปเดโมสำรอง กันเน็ตล่มวันนำเสนอ', '2026-11-04'],
+  [3, 'ney', 'เดโมสดวันนำเสนอ', '2026-11-06'],
+  [3, 'pom', 'พิมพ์บัตรสะสมแต้มตัวอย่าง 2–3 ใบไว้ถือโชว์', '2026-11-04'],
+  [3, 'pom', 'เตรียมคำตอบคำถามอาจารย์ (ตัวเลขสมมติมาจากไหน, ทำไมมัดจำ ฿300)', '2026-11-05'],
+  [3, 'pom', 'นำเสนอ', '2026-11-06'],
+  [3, 'claude', 'ซ้อมถาม-ตอบ และเก็บรายละเอียดสไลด์ฉบับสุดท้าย', '2026-11-05'],
+];
+
 const HEADERS = ['Created At', 'Booking ID', 'Date', 'Start', 'End', 'Duration', 'Stylist', 'Services',
   'Hair Length', 'Est. Price', 'Deposit', 'Deposit Status', 'Status', 'Name', 'Phone', 'Pronoun',
   'Chemical History', 'Note', 'Ref Photos', 'Slip', 'LINE User ID', 'Visit No', 'Arrived At',
@@ -109,13 +143,14 @@ function setup() {
   sh.getRange(2, 1, sh.getMaxRows() - 1, HEADERS.length).setNumberFormat('@'); // เก็บทุกอย่างเป็นข้อความ
   sh.hideColumns(K.uid + 1);
 
-  [[POINTS_SHEET, POINTS_HEADERS, P.uid], [MEMBERS_SHEET, MEMBERS_HEADERS, 0]].forEach(([name, headers, hideCol]) => {
+  [[POINTS_SHEET, POINTS_HEADERS, P.uid], [MEMBERS_SHEET, MEMBERS_HEADERS, 0], [TASKS_SHEET, TASK_HEADERS, -1]].forEach(([name, headers, hideCol]) => {
     const s = ss.getSheetByName(name) || ss.insertSheet(name);
     s.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1E2B3C').setFontColor('#F6F6F4');
     s.setFrozenRows(1);
     s.getRange(2, 1, s.getMaxRows() - 1, headers.length).setNumberFormat('@');
-    s.hideColumns(hideCol + 1);
+    if (hideCol >= 0) s.hideColumns(hideCol + 1);
   });
+  seedTasks_();
 
   const props = PropertiesService.getScriptProperties();
   if (!props.getProperty('UPLOAD_FOLDER_ID')) {
@@ -560,6 +595,46 @@ function admin_(uid, b) {
     } });
     return { ok: true, bookings: day.map(r => ({ ...toBooking_(r.v, true), loyalty: loyalty[r.v[K.id]] || null })), config: publicConfig_() };
   }
+  if (b.action === 'admin_overview') {
+    if (!re.test(b.from) || !re.test(b.to)) throw new Error('ช่วงวันที่ไม่ถูกต้อง');
+    const pr = pointRows_();
+    const members = SpreadsheetApp.getActive().getSheetByName(MEMBERS_SHEET);
+    const folderId = PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID');
+    return {
+      ok: true, config: publicConfig_(),
+      bookings: rows_().filter(r => r.v[K.date] >= b.from && r.v[K.date] <= b.to).map(r => toBooking_(r.v, true)),
+      loyalty: {
+        members: members ? Math.max(0, members.getLastRow() - 1) : 0,
+        pointsIssued: pr.filter(r => r.v[P.type] === 'EARN').reduce((s, r) => s + Number(r.v[P.points]), 0),
+        vouchersOpen: pr.filter(r => r.v[P.type] === 'REDEEM' && r.v[P.status] === 'ใช้ได้').length,
+        vouchersUsed: pr.filter(r => r.v[P.type] === 'REDEEM' && r.v[P.status] === 'ใช้แล้ว').length,
+      },
+      links: {
+        sheet: SpreadsheetApp.getActive().getUrl(),
+        script: `https://script.google.com/home/projects/${ScriptApp.getScriptId()}/edit`,
+        uploads: folderId ? `https://drive.google.com/drive/folders/${folderId}` : '',
+      },
+    };
+  }
+  if (b.action === 'admin_tasks') return { ok: true, tasks: tasks_(), phases: PHASES };
+  if (b.action === 'admin_task_set') {
+    const t = taskRow_(b.id);
+    const sh = SpreadsheetApp.getActive().getSheetByName(TASKS_SHEET);
+    sh.getRange(t.row, 6, 1, 3).setNumberFormat('@').setValues([[b.done ? 'yes' : '', b.done ? String(b.by || '').slice(0, 40) : '', b.done ? nowStr_() : '']]);
+    return { ok: true, tasks: tasks_() };
+  }
+  if (b.action === 'admin_task_add') {
+    const title = String(b.title || '').trim().slice(0, 200);
+    if (!title) throw new Error('กรุณาพิมพ์ชื่องาน');
+    const owner = ['ney', 'pom', 'claude'].includes(b.owner) ? b.owner : 'ney';
+    const phase = PHASES[Number(b.phase)] ? PHASES[Number(b.phase)] : PHASES[0];
+    appendTo_(TASKS_SHEET, TASK_HEADERS.length, ['T' + Date.now().toString(36), phase, owner, title, re.test(b.due) ? b.due : '', '', '', '']);
+    return { ok: true, tasks: tasks_() };
+  }
+  if (b.action === 'admin_task_delete') {
+    SpreadsheetApp.getActive().getSheetByName(TASKS_SHEET).deleteRow(taskRow_(b.id).row);
+    return { ok: true, tasks: tasks_() };
+  }
   if (b.action === 'admin_use_voucher') {
     const r = pointRows_().find(x => x.v[P.code] === b.code && x.v[P.type] === 'REDEEM');
     if (!r || r.v[P.status] !== 'ใช้ได้') throw new Error('โค้ดนี้ใช้ไม่ได้');
@@ -628,6 +703,31 @@ function admin_(uid, b) {
     };
   }
   throw new Error('unknown admin action');
+}
+
+// ---------- team tasks ----------
+
+function seedTasks_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(TASKS_SHEET);
+  if (sh.getLastRow() > 1) return;
+  const rows = DEFAULT_TASKS.map(([p, owner, title, due], i) => ['T' + String(i + 1).padStart(2, '0'), PHASES[p], owner, title, due, '', '', '']);
+  sh.getRange(2, 1, rows.length, TASK_HEADERS.length).setNumberFormat('@').setValues(rows);
+}
+
+function tasks_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(TASKS_SHEET);
+  if (!sh) throw new Error('ยังไม่มีแท็บ Tasks กรุณา Run setup ใน Apps Script');
+  if (sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, TASK_HEADERS.length).getDisplayValues()
+    .map(v => ({ id: v[0], phase: v[1], owner: v[2], title: v[3], due: v[4], done: v[5] === 'yes', by: v[6], at: v[7] }));
+}
+
+function taskRow_(id) {
+  const sh = SpreadsheetApp.getActive().getSheetByName(TASKS_SHEET);
+  const ids = sh.getLastRow() < 2 ? [] : sh.getRange(2, 1, sh.getLastRow() - 1, 1).getDisplayValues().map(r => r[0]);
+  const i = ids.indexOf(String(id));
+  if (i < 0) throw new Error('ไม่พบงานนี้');
+  return { row: i + 2 };
 }
 
 // ---------- LINE messages ----------
