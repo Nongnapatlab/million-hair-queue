@@ -6,6 +6,9 @@
  *   LOGIN_CHANNEL_ID  Channel ID ของ LINE Login channel (MillionHair Queue App)
  *   ADMIN_USER_IDS    LINE User ID ของแอดมิน คั่นด้วย ,
  *   PROMPTPAY_ID      (ไม่บังคับ) เบอร์/เลขบัตรสำหรับ QR มัดจำ — ว่างไว้ = โหมดสาธิต ไม่ต้องโอนจริง
+ *   GEMINI_API_KEY    (ไม่บังคับ) API key ฟรีจาก Google AI Studio — ว่างไว้ = ปิดฟีเจอร์ AI (ตรวจสลิป / ประเมินทรง)
+ *   GEMINI_MODEL      (ไม่บังคับ) ค่าเริ่มต้น gemini-3.5-flash-lite
+ *   AI_AUTO_CONFIRM   (ไม่บังคับ) off = AI ตรวจแล้วแต่ให้แอดมินกดยืนยันเอง
  *
  * ติดตั้ง: รัน setup() ทุกครั้งที่อัปเดตโค้ด (หัวตาราง + trigger) · setupRichMenu() ครั้งเดียว
  */
@@ -25,6 +28,12 @@ const SHOP = {
   open: 10 * 60, close: 20 * 60, closedDays: [3], // 0=อา … 3=พ
   slotStep: 30, leadMin: 30, daysAhead: 14,
   deposit: 300, holdMin: 30, // กันคิวไว้ 30 นาทีระหว่างรอมัดจำ
+  // จองแบบยืดหยุ่น: ลูกค้าเลือกแค่ช่วง ระบบจัดเวลาจริงให้ชิดคิวที่มีอยู่ (ลดช่องว่างของช่าง)
+  windows: [
+    { id: 'morning', th: 'ช่วงเช้า', en: 'MORNING', from: 10 * 60, to: 13 * 60 },
+    { id: 'afternoon', th: 'ช่วงบ่าย', en: 'AFTERNOON', from: 13 * 60, to: 17 * 60 },
+    { id: 'evening', th: 'ช่วงเย็น', en: 'EVENING', from: 17 * 60, to: 20 * 60 },
+  ],
   mapUrl: MAP_URL,
 };
 const LENGTHS = [
@@ -62,8 +71,8 @@ const DEPOSIT = { UNPAID: 'ยังไม่ชำระ', SLIP: 'แนบส�
 
 // ---------- ข้อความ LINE (น้ำเสียงกลาง ไม่ใช้ ครับ/ค่ะ) · {ชื่อ} {วันที่} {เวลา} {ช่าง} {บริการ} {รหัสจอง} {ลิงก์จอง} ----------
 const MSG = {
-  pending: 'ได้รับคำขอจองแล้ว {ชื่อ}\n\n{วันที่} · {เวลา} น.\nช่าง {ช่าง} · {บริการ}\n\nโอนมัดจำ ฿300 ผ่าน PromptPay แล้วแนบสลิปภายใน 30 นาที เพื่อล็อกคิวนี้ไว้\nรหัสจอง {รหัสจอง}',
-  confirmed: 'จองสำเร็จ ✓ เจอกัน {วันที่} เวลา {เวลา} น.\nช่าง {ช่าง} · {บริการ}\nรหัสจอง {รหัสจอง}\n\nเลื่อนนัดได้ฟรีก่อน 24 ชม. ผ่านเมนู MY BOOKING',
+  pending: 'ได้รับคำขอจองแล้ว {ชื่อ}\n\n{วันที่} · {เวลา} น.{ช่วงเวลา}\nช่าง {ช่าง} · {บริการ}\n\nโอนมัดจำ ฿300 ผ่าน PromptPay แล้วแนบสลิปภายใน 30 นาที เพื่อล็อกคิวนี้ไว้\nรหัสจอง {รหัสจอง}',
+  confirmed: 'จองสำเร็จ ✓ เจอกัน {วันที่} เวลา {เวลา} น.{ช่วงเวลา}\nช่าง {ช่าง} · {บริการ}\nรหัสจอง {รหัสจอง}\n\nเลื่อนนัดได้ฟรีก่อน 24 ชม. ผ่านเมนู MY BOOKING',
   reminderD1: 'พรุ่งนี้เจอกัน {ชื่อ} ✦\n{วันที่} · {เวลา} น. กับ {ช่าง}\n\nถ้ามีรูปทรงที่อยากได้เพิ่ม ส่งมาในแชทนี้ได้เลย ช่างจะได้เตรียมก่อน',
   reminder2h: 'อีก 2 ชั่วโมงถึงคิวของ {ชื่อ} ({เวลา} น.)\nร้านอยู่ซอยสุขุมวิท 49 ใกล้ BTS พร้อมพงษ์\nมาถึงก่อน 5–10 นาทีกำลังดี',
   rescheduled: 'เปลี่ยนนัดให้แล้ว\nใหม่: {วันที่} · {เวลา} น. กับ {ช่าง}\n\nมัดจำเดิมยังใช้ได้ตามปกติ',
@@ -125,12 +134,14 @@ const HEADERS = ['Created At', 'Booking ID', 'Date', 'Start', 'End', 'Duration',
   'Hair Length', 'Est. Price', 'Deposit', 'Deposit Status', 'Status', 'Name', 'Phone', 'Pronoun',
   'Chemical History', 'Note', 'Ref Photos', 'Slip', 'LINE User ID', 'Visit No', 'Arrived At',
   'Started At', 'Finished At', 'Cancelled At', 'Reminder D-1', 'Channel',
-  'Confirmed At', 'Reminder 2h', 'After Visit Sent', 'Rebook Sent', 'Rating', 'Review'];
+  'Confirmed At', 'Reminder 2h', 'After Visit Sent', 'Rebook Sent', 'Rating', 'Review',
+  'Time Window', 'AI Estimate', 'AI Slip Check', 'Slip Ref'];
 const K = {}; // ชื่อ field → index (0-based)
 ['created', 'id', 'date', 'start', 'end', 'duration', 'stylist', 'services', 'length', 'price', 'deposit',
   'depositStatus', 'status', 'name', 'phone', 'pronoun', 'chem', 'note', 'photos', 'slip', 'uid', 'visit',
   'arrived', 'started', 'finished', 'cancelled', 'reminded', 'channel',
-  'confirmedAt', 'reminded2h', 'afterSent', 'rebookSent', 'rating', 'review'].forEach((k, i) => { K[k] = i; });
+  'confirmedAt', 'reminded2h', 'afterSent', 'rebookSent', 'rating', 'review',
+  'window', 'aiEstimate', 'aiSlip', 'slipRef'].forEach((k, i) => { K[k] = i; });
 
 // ---------- setup ----------
 
@@ -207,6 +218,7 @@ function doPost(e) {
       case 'last': return json_(lastProfile_(uid));
       case 'points': return json_({ ok: true, ...pointsOf_(uid) });
       case 'redeem': return json_(redeem_(uid, body.reward));
+      case 'ai_estimate': return json_(aiEstimate_(uid, body));
       default:
         if (String(body.action).startsWith('admin_')) return json_(admin_(uid, body));
         return json_({ ok: false, error: 'unknown action' });
@@ -221,6 +233,7 @@ function publicConfig_() {
   return {
     ok: true, shop: SHOP, lengths: LENGTHS, services: SERVICES, stylists: STYLISTS, loyalty: LOYALTY,
     chemicals: CHEMICALS, pronouns: PRONOUNS, dates: bookableDates_(),
+    ai: Boolean(PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY')),
     promptpay: pp ? promptPayPayload_(pp, SHOP.deposit) : null,
   };
 }
@@ -276,8 +289,31 @@ function slots_(body) {
     const free = t >= earliest && ids.some(id => isFree_(busy[id], t, t + minutes));
     slots.push({ time: toHHMM_(t), free });
   }
-  return { ok: true, date, closed: false, minutes, slots };
+  const windows = SHOP.windows.map(w => ({ id: w.id, free: Boolean(bestFit_(busy, ids, w, minutes, earliest)) }));
+  return { ok: true, date, closed: false, minutes, slots, windows };
 }
+
+/**
+ * จัดเวลาให้คิวแบบยืดหยุ่น: ลองทุกเวลาเริ่มในช่วงที่เลือก กับช่างทุกคนที่ว่าง
+ * เลือกเวลาที่ชิดนัดเดิม (หรือชิดเวลาเปิด-ปิดร้าน) มากที่สุด เพื่อไม่ให้เกิดช่องว่างสั้น ๆ ที่ขายไม่ได้
+ * เสมอกัน → ช่างที่มีนัดน้อยกว่า → เวลาที่เร็วกว่า
+ */
+function bestFit_(busy, ids, win, minutes, earliest) {
+  let best = null;
+  const from = Math.max(win.from, Math.ceil(earliest / SHOP.slotStep) * SHOP.slotStep);
+  ids.forEach(id => {
+    const ranges = busy[id] || [];
+    for (let t = from; t < win.to && t + minutes <= SHOP.close; t += SHOP.slotStep) {
+      if (!isFree_(ranges, t, t + minutes)) continue;
+      const before = t - Math.max(SHOP.open, ...ranges.filter(([, e]) => e <= t).map(([, e]) => e));
+      const after = Math.min(SHOP.close, ...ranges.filter(([s]) => s >= t + minutes).map(([s]) => s)) - (t + minutes);
+      const score = [Math.min(before, after, 60), ranges.length, t]; // ช่องว่าง ≥ 60 นาทียังขายได้ ถือว่าเท่ากัน
+      if (!best || compare_(score, best.score) < 0) best = { id, start: t, score };
+    }
+  });
+  return best;
+}
+const compare_ = (a, b) => { for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
 
 function busyMap_(date, excludeId) {
   const map = {};
@@ -322,7 +358,14 @@ function book_(uid, b) {
   if (b.consent !== true) throw new Error('ต้องยินยอมให้เก็บข้อมูลก่อนจอง');
   const len = LENGTHS.some(l => l.code === b.length) ? b.length : 'M';
   const q = quote_(b.services, len);
-  const start = validateSlot_(b.date, b.time, q.minutes);
+  // ผลประเมิน AI ที่ลูกค้ากดใช้: บวกเวลาเผื่อตามสภาพผม (จำกัด 0–90 นาที) · ราคายังมาจากตารางราคาเสมอ
+  const ai = b.ai && typeof b.ai === 'object' ? b.ai : null;
+  const extra = ai ? Math.min(90, Math.max(0, Math.round(Number(ai.extraMinutes) / 15) * 15 || 0)) : 0;
+  q.minutes += extra;
+  const win = b.window ? SHOP.windows.find(w => w.id === b.window) : null;
+  if (b.window && !win) throw new Error('ช่วงเวลาไม่ถูกต้อง');
+  let start = win ? null : validateSlot_(b.date, b.time, q.minutes);
+  if (win) bookableDay_(b.date);
 
   const slipUrl = b.slip ? saveUpload_(b.slip, `slip_${b.date}_${name}`) : '';
   const photoUrls = (b.photos || []).slice(0, 3).map((p, i) => saveUpload_(p, `ref_${b.date}_${name}_${i + 1}`));
@@ -331,7 +374,17 @@ function book_(uid, b) {
   lock.waitLock(15000);
   let rec;
   try {
-    const stylist = pickStylist_(b.date, b.stylist, start, q.minutes);
+    let stylist;
+    if (win) {
+      const ids = b.stylist && b.stylist !== 'any' ? [b.stylist] : STYLISTS.map(s => s.id);
+      const earliest = b.date === todayStr_() ? nowMin_() + SHOP.leadMin : 0;
+      const fit = bestFit_(busyMap_(b.date), ids, win, q.minutes, earliest);
+      if (!fit) throw new Error(`${win.th}ของวันนี้เต็มแล้ว ลองช่วงอื่นหรือเลือกช่าง Any`);
+      start = fit.start;
+      stylist = STYLISTS.find(s => s.id === fit.id);
+    } else {
+      stylist = pickStylist_(b.date, b.stylist, start, q.minutes);
+    }
     const visit = rows_().filter(r => r.v[K.uid] === uid && r.v[K.status] !== STATUS.CANCELLED).length + 1;
     const v = new Array(HEADERS.length).fill('');
     Object.assign(v, {
@@ -343,16 +396,26 @@ function book_(uid, b) {
       [K.pronoun]: PRONOUNS.includes(b.pronoun) ? b.pronoun : 'ไม่ระบุ',
       [K.chem]: (b.chemicals || []).filter(c => CHEMICALS.includes(c)).join(', '),
       [K.note]: String(b.note || '').slice(0, 300), [K.photos]: photoUrls.join(' '), [K.slip]: slipUrl,
-      [K.uid]: uid, [K.visit]: String(visit), [K.channel]: 'LINE',
+      [K.uid]: uid, [K.visit]: String(visit), [K.channel]: 'LINE', [K.window]: win ? win.id : '',
+      [K.aiEstimate]: ai ? `${String(ai.summary || '').slice(0, 300)}${extra ? ` · เผื่อเวลา +${extra} นาที` : ''}` : '',
     });
     appendRow_(v);
     rec = toBooking_(v);
   } finally {
     lock.releaseLock();
   }
-  // ยังไม่แนบสลิป → ส่งข้อความรอมัดจำ · แนบแล้ว → รอร้านตรวจ แล้วค่อยส่งยืนยัน
-  if (!slipUrl) push_(uid, [card_(MSG.pending, rec, [['แนบสลิป', LIFF_URL + '?page=my']])]);
-  return { ok: true, booking: rec };
+  // ยังไม่แนบสลิป → ส่งข้อความรอมัดจำ · แนบแล้ว → AI ตรวจสลิป ผ่าน = ยืนยันทันที ไม่ผ่าน = รอร้านตรวจ
+  if (!slipUrl) {
+    push_(uid, [card_(MSG.pending, rec, [['แนบสลิป', LIFF_URL + '?page=my']])]);
+    return { ok: true, booking: rec };
+  }
+  return { ok: true, ...checkSlip_(rec.id, b.slip) };
+}
+
+function bookableDay_(date) {
+  const day = bookableDates_().find(d => d.date === date);
+  if (!day || day.closed) throw new Error('วันนี้ร้านปิดหรืออยู่นอกช่วงที่จองได้');
+  return true;
 }
 
 function attachSlip_(uid, b) {
@@ -360,7 +423,7 @@ function attachSlip_(uid, b) {
   if (r.v[K.status] !== STATUS.PENDING) throw new Error('นัดนี้ไม่ได้รอมัดจำแล้ว');
   const url = saveUpload_(b.slip, `slip_${r.v[K.date]}_${r.v[K.name]}`);
   setCells_(r.row, { [K.slip]: url, [K.depositStatus]: DEPOSIT.SLIP });
-  return { ok: true };
+  return { ok: true, ...checkSlip_(r.v[K.id], b.slip) };
 }
 
 function rate_(uid, b) {
@@ -419,7 +482,7 @@ function moveBooking_(r, date, time, byShop) {
     try { stylist = pickStylist_(date, wanted, start, minutes, r.v[K.id]); }
     catch (e) { stylist = pickStylist_(date, 'any', start, minutes, r.v[K.id]); }
     setCells_(r.row, { [K.date]: date, [K.start]: toHHMM_(start), [K.end]: toHHMM_(start + minutes),
-      [K.stylist]: stylist.name, [K.reminded]: '', [K.reminded2h]: '' });
+      [K.stylist]: stylist.name, [K.reminded]: '', [K.reminded2h]: '', [K.window]: '' });
     rec = toBooking_(rows_().find(x => x.row === r.row).v);
   } finally {
     lock.releaseLock();
@@ -660,10 +723,17 @@ function admin_(uid, b) {
   if (b.action === 'admin_confirm') { // ตรวจสลิป / รับมัดจำแล้ว → ยืนยันนัด + ส่ง Flex
     const r = find(b.id);
     if (r.v[K.status] !== STATUS.PENDING) throw new Error('นัดนี้ไม่ได้อยู่ในสถานะรอมัดจำ');
-    setCells_(r.row, { [K.status]: STATUS.CONFIRMED, [K.depositStatus]: DEPOSIT.PAID, [K.confirmedAt]: nowStr_() });
-    const rec = toBooking_(rows_().find(x => x.row === r.row).v);
-    if (r.v[K.uid]) push_(r.v[K.uid], [confirmFlex_(rec)]);
+    confirm_(r);
     return { ok: true };
+  }
+  if (b.action === 'admin_ai_slip') { // ให้ AI ตรวจสลิปอีกครั้ง (เช่น ครั้งแรกโควตาเต็ม)
+    const r = find(b.id);
+    const fileId = (/\/d\/([\w-]+)/.exec(r.v[K.slip]) || [])[1];
+    if (!fileId) throw new Error('นัดนี้ยังไม่มีสลิป');
+    const blob = DriveApp.getFileById(fileId).getBlob();
+    const res = checkSlip_(b.id, `data:${blob.getContentType()};base64,${Utilities.base64Encode(blob.getBytes())}`);
+    if (!res.aiSlip) throw new Error('ร้านยังไม่เปิดใช้ AI (ใส่ GEMINI_API_KEY ใน Script Properties)');
+    return { ok: true, ...res };
   }
   if (b.action === 'admin_reschedule') {
     if (!re.test(b.date)) throw new Error('วันที่ไม่ถูกต้อง');
@@ -705,6 +775,153 @@ function admin_(uid, b) {
   throw new Error('unknown admin action');
 }
 
+// ---------- AI (Gemini free tier) ----------
+
+/** เรียก Gemini (Interactions API) พร้อมรูป แล้วคืน JSON ตาม schema · ไม่มี key → throw AI_OFF */
+function gemini_(prompt, images, schema) {
+  const props = PropertiesService.getScriptProperties();
+  const key = props.getProperty('GEMINI_API_KEY');
+  if (!key) throw new Error('AI_OFF');
+  const input = [{ type: 'text', text: prompt }].concat(images.map(dataUrl => {
+    const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(String(dataUrl));
+    if (!m) throw new Error('ไฟล์รูปไม่ถูกต้อง');
+    return { type: 'image', mime_type: m[1], data: m[2] };
+  }));
+  const res = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-goog-api-key': key, 'Api-Revision': '2026-05-20' },
+    payload: JSON.stringify({
+      model: props.getProperty('GEMINI_MODEL') || 'gemini-3.5-flash-lite', input, store: false,
+      response_format: { type: 'text', mime_type: 'application/json', schema },
+    }),
+  });
+  const code = res.getResponseCode();
+  if (code === 429) throw new Error('AI ใช้โควตาฟรีช่วงนี้ครบแล้ว');
+  if (code >= 300) throw new Error(`Gemini ${code}: ${res.getContentText().slice(0, 200)}`);
+  const d = JSON.parse(res.getContentText());
+  const text = (d.steps || []).filter(s => s.type === 'model_output').flatMap(s => s.content || [])
+    .filter(c => c.type === 'text').map(c => c.text).join('');
+  return JSON.parse(text.replace(/^\s*```(?:json)?|```\s*$/g, ''));
+}
+
+/** AI ประเมินทรงจากรูป: เลือกความยาว + บริการ + เวลาเผื่อ · ราคาคำนวณจากตารางราคาของร้านเท่านั้น */
+function aiEstimate_(uid, b) {
+  const photos = (b.photos || []).slice(0, 2);
+  if (!photos.length) throw new Error('กรุณาแนบรูปผมปัจจุบันอย่างน้อย 1 รูป');
+  const cache = CacheService.getScriptCache(), ck = 'ai_' + uid, used = Number(cache.get(ck) || 0);
+  if (used >= 10) throw new Error('ใช้ AI ประเมินครบ 10 ครั้งต่อชั่วโมงแล้ว ลองใหม่ภายหลัง');
+  cache.put(ck, String(used + 1), 3600);
+
+  const chem = (b.chemicals || []).filter(c => CHEMICALS.includes(c));
+  const prompt = `คุณเป็นช่างทำผมอาวุโสของร้าน ${SHOP.name} ประเมินงานจากรูป
+รูปที่ 1 คือผมปัจจุบันของลูกค้า${photos.length > 1 ? ' · รูปที่ 2 คือทรงที่ลูกค้าอยากได้' : ''}
+สิ่งที่ลูกค้าอยากได้: ${String(b.wish || '').slice(0, 300) || '(ไม่ได้ระบุ)'}
+ทำเคมีใน 12 เดือน: ${chem.join(', ') || 'ไม่มี / ไม่ระบุ'}
+
+length: S = สั้นถึงคาง · M = ประบ่า · L = ยาวเลยบ่า ถึงกลางหลัง · XL = ยาวเกินกลางหลังหรือหนามาก
+services: เลือกเฉพาะ id จากรายการนี้ และเลือกเท่าที่จำเป็นเพื่อให้ได้ทรงที่ต้องการ
+${SERVICES.map(s => `${s.id} = ${s.th} (มาตรฐาน ${s.min} นาที)`).join('\n')}
+extraMinutes: เวลาที่ควรเผื่อเพิ่มจากเวลามาตรฐาน เพราะผมหนา ยาว หรือเสีย (0–90 ทวีคูณ 15)
+reason: ภาษาไทย 1–2 ประโยค อธิบายสภาพผมและเหตุผลที่เลือก ไม่ต้องพูดถึงราคา
+ถ้ารูปที่ 1 มองไม่เห็นผมชัด ให้ isHair = false`;
+  const schema = {
+    type: 'object', required: ['isHair', 'length', 'thickness', 'services', 'extraMinutes', 'confidence', 'reason'],
+    properties: {
+      isHair: { type: 'boolean' },
+      length: { type: 'string', enum: LENGTHS.map(l => l.code) },
+      thickness: { type: 'string', enum: ['บาง', 'ปกติ', 'หนา'] },
+      services: { type: 'array', items: { type: 'string', enum: SERVICES.map(s => s.id) } },
+      extraMinutes: { type: 'integer' },
+      confidence: { type: 'string', enum: ['สูง', 'กลาง', 'ต่ำ'] },
+      reason: { type: 'string' },
+    },
+  };
+  let x;
+  try { x = gemini_(prompt, photos, schema); }
+  catch (err) { throw new Error(err.message === 'AI_OFF' ? 'ร้านยังไม่เปิดใช้ AI' : err.message); }
+  if (!x.isHair) throw new Error('มองไม่เห็นผมชัด ลองถ่ายใหม่ให้เห็นทั้งศีรษะในที่สว่าง');
+
+  const len = LENGTHS.some(l => l.code === x.length) ? x.length : 'M';
+  const ids = SERVICES.map(s => s.id).filter(id => (x.services || []).includes(id));
+  if (!ids.length) ids.push('cut');
+  const extra = Math.min(90, Math.max(0, Math.round(Number(x.extraMinutes) / 15) * 15 || 0));
+  const q = quote_(ids, len);
+  const thickness = ['บาง', 'ปกติ', 'หนา'].includes(x.thickness) ? x.thickness : 'ปกติ';
+  return {
+    ok: true,
+    estimate: {
+      length: len, thickness, services: ids, extraMinutes: extra, minutes: q.minutes + extra, price: q.price,
+      confidence: x.confidence || 'กลาง', reason: String(x.reason || '').slice(0, 300),
+      summary: `AI: ผม${LENGTHS.find(l => l.code === len).th} (${len}) · ${thickness} · ${q.svcs.map(s => s.th).join(' + ')} · ${String(x.reason || '').slice(0, 160)}`,
+    },
+  };
+}
+
+/**
+ * AI อ่านสลิป แล้วโค้ดตรวจ: ยอด ≥ มัดจำ · เวลาโอนตรงกับช่วงที่จอง · เลขอ้างอิงไม่ซ้ำนัดอื่น · บัญชีผู้รับตรงกับร้าน
+ * ผ่านทุกข้อ → ยืนยันนัดอัตโนมัติ · ไม่ผ่าน/AI ใช้ไม่ได้ → คงสถานะรอตรวจ ให้แอดมินดูเหตุผล
+ * ข้อจำกัด: AI อ่านจากภาพเท่านั้น ยืนยันกับธนาคารไม่ได้ (ระบบจริงควรใช้ API ตรวจสลิปของธนาคาร)
+ */
+function checkSlip_(id, dataUrl) {
+  const find = () => rows_().find(x => x.v[K.id] === id);
+  const r = find();
+  let x;
+  try {
+    x = gemini_(`อ่านสลิปโอนเงินธนาคารไทยหรือพร้อมเพย์ในรูปนี้ ตอบตาม schema
+isSlip = false ถ้าไม่ใช่สลิปโอนเงินที่ทำรายการสำเร็จ
+amount = ยอดเงินบาท (ตัวเลข)
+date = วันที่โอน แปลงเป็นปีคริสต์ศักราชแบบ YYYY-MM-DD (สลิปไทยมักเป็น พ.ศ. ให้ลบ 543)
+time = เวลาโอน HH:mm แบบ 24 ชม.
+ref = เลขที่รายการหรือรหัสอ้างอิง
+receiverName, receiverAccount = ชื่อและเลขบัญชี/พร้อมเพย์ของผู้รับตามที่เห็น (คง x ที่ปิดไว้)
+looksEdited = true ถ้ามีร่องรอยการแก้ไขภาพ เช่น ฟอนต์หรือตัวเลขไม่เข้ากัน
+ห้ามเดา ถ้าอ่านไม่ออกให้เป็นสตริงว่างหรือ 0`, [dataUrl], {
+      type: 'object', required: ['isSlip', 'amount', 'date', 'time', 'ref', 'receiverName', 'receiverAccount', 'looksEdited'],
+      properties: {
+        isSlip: { type: 'boolean' }, amount: { type: 'number' }, date: { type: 'string' }, time: { type: 'string' },
+        ref: { type: 'string' }, receiverName: { type: 'string' }, receiverAccount: { type: 'string' }, looksEdited: { type: 'boolean' },
+      },
+    });
+  } catch (err) {
+    if (err.message === 'AI_OFF') return { booking: toBooking_(r.v), aiSlip: null };
+    setCells_(r.row, { [K.aiSlip]: `– AI ตรวจไม่ได้: ${err.message}`.slice(0, 300) });
+    return { booking: toBooking_(r.v), aiSlip: { verdict: 'skip', reasons: ['AI ตรวจไม่ได้ตอนนี้ ร้านจะตรวจเอง'] } };
+  }
+
+  const reasons = [];
+  const ref = String(x.ref || '').replace(/\s/g, '');
+  if (!x.isSlip) reasons.push('รูปนี้ไม่ใช่สลิปโอนเงิน');
+  else {
+    if (!(Number(x.amount) >= SHOP.deposit)) reasons.push(`ยอดโอน ฿${Number(x.amount) || 0} ไม่ถึงมัดจำ ฿${SHOP.deposit}`);
+    let date = String(x.date || '');
+    if (/^\d{4}-/.test(date) && Number(date.slice(0, 4)) > 2400) date = (Number(date.slice(0, 4)) - 543) + date.slice(4);
+    const paid = /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{1,2}:\d{2}$/.test(x.time) ? tsMs_(`${date} ${x.time.padStart(5, '0')}`) : NaN;
+    if (isNaN(paid)) reasons.push('อ่านวันเวลาโอนไม่ออก');
+    else if (paid < tsMs_(r.v[K.created]) - 60 * 60000 || paid > Date.now() + 10 * 60000) reasons.push('เวลาโอนไม่ตรงกับช่วงที่จอง');
+    if (!ref) reasons.push('อ่านเลขอ้างอิงไม่ออก');
+    else if (rows_().some(o => o.v[K.slipRef] === ref && o.v[K.id] !== id)) reasons.push('สลิปนี้เคยใช้กับนัดอื่นแล้ว (เลขอ้างอิงซ้ำ)');
+    const pp = String(PropertiesService.getScriptProperties().getProperty('PROMPTPAY_ID') || '').replace(/\D/g, '');
+    const seen = String(x.receiverAccount || '').match(/\d{3,}/g) || [];
+    if (pp && !seen.some(g => pp.includes(g))) reasons.push('บัญชีผู้รับไม่ตรงกับบัญชีร้าน');
+    if (x.looksEdited) reasons.push('AI สงสัยว่าภาพสลิปถูกแก้ไข');
+  }
+  const pass = !reasons.length;
+  setCells_(r.row, pass
+    ? { [K.aiSlip]: `✓ ผ่าน · ฿${x.amount} · ${x.date} ${x.time} · ${x.receiverName || ''}`.slice(0, 300), [K.slipRef]: ref }
+    : { [K.aiSlip]: `✗ ${reasons.join(' / ')}`.slice(0, 300) });
+  const auto = PropertiesService.getScriptProperties().getProperty('AI_AUTO_CONFIRM') !== 'off';
+  if (pass && auto && r.v[K.status] === STATUS.PENDING) return { booking: confirm_(r), aiSlip: { verdict: 'pass', reasons: [] } };
+  return { booking: toBooking_(find().v), aiSlip: { verdict: pass ? 'pass' : 'fail', reasons } };
+}
+
+/** รับมัดจำแล้ว → ยืนยันนัด + ส่ง Flex ยืนยัน */
+function confirm_(r) {
+  setCells_(r.row, { [K.status]: STATUS.CONFIRMED, [K.depositStatus]: DEPOSIT.PAID, [K.confirmedAt]: nowStr_() });
+  const rec = toBooking_(rows_().find(x => x.row === r.row).v);
+  if (r.v[K.uid]) push_(r.v[K.uid], [confirmFlex_(rec)]);
+  return rec;
+}
+
 // ---------- team tasks ----------
 
 function seedTasks_() {
@@ -734,8 +951,9 @@ function taskRow_(id) {
 
 function fill_(tpl, b) {
   const map = { 'ชื่อ': b.name, 'วันที่': thaiDate_(b.date), 'เวลา': b.start, 'ช่าง': b.stylist,
-    'บริการ': b.services, 'รหัสจอง': b.id, 'ลิงก์จอง': LIFF_URL };
-  return tpl.replace(/\{(ชื่อ|วันที่|เวลา|ช่าง|บริการ|รหัสจอง|ลิงก์จอง)\}/g, (_, k) => map[k] || '');
+    'บริการ': b.services, 'รหัสจอง': b.id, 'ลิงก์จอง': LIFF_URL,
+    'ช่วงเวลา': b.window ? `\nระบบจัดเวลาให้ใน${(SHOP.windows.find(w => w.id === b.window) || {}).th}ที่เลือก ให้ช่างว่างพอดีไม่ต้องรอ` : '' };
+  return tpl.replace(/\{(ชื่อ|วันที่|เวลา|ช่าง|บริการ|รหัสจอง|ลิงก์จอง|ช่วงเวลา)\}/g, (_, k) => map[k] || '');
 }
 
 /** ข้อความสั้นแบบการ์ด: ข้อความตามเทมเพลต + ปุ่มลิงก์ (altText = ข้อความเดียวกัน) */
@@ -835,14 +1053,14 @@ function toBooking_(v, admin) {
     id: v[K.id], date: v[K.date], start: v[K.start], end: v[K.end], duration: Number(v[K.duration]),
     stylist: v[K.stylist], services: v[K.services], length: v[K.length], price: Number(v[K.price]),
     deposit: Number(v[K.deposit]), depositStatus: v[K.depositStatus], status: v[K.status], name: v[K.name],
-    visit: Number(v[K.visit]) || 0, channel: v[K.channel], rating: Number(v[K.rating]) || 0,
+    visit: Number(v[K.visit]) || 0, channel: v[K.channel], rating: Number(v[K.rating]) || 0, window: v[K.window],
   };
   if (admin) {
     Object.assign(b, {
       created: v[K.created], phone: v[K.phone], pronoun: v[K.pronoun], chem: v[K.chem], note: v[K.note],
       photos: v[K.photos] ? v[K.photos].split(' ') : [], slip: v[K.slip], arrived: v[K.arrived],
       started: v[K.started], finished: v[K.finished], cancelled: v[K.cancelled], confirmedAt: v[K.confirmedAt],
-      review: v[K.review],
+      review: v[K.review], aiEstimate: v[K.aiEstimate], aiSlip: v[K.aiSlip],
     });
   }
   return b;

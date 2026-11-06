@@ -165,6 +165,31 @@
   .kv div { padding: 12px 14px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.55; }
   .kv div:first-child { border-top: 0; }
   .note { font-size: 11.5px; color: var(--muted); text-align: center; margin-top: 22px; }
+  .ai { border: 1px solid var(--steel); background: var(--steel-soft); padding: 14px; margin: 0 0 18px; }
+  .ai-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .ai-h b { font: 700 16px var(--en); letter-spacing: 1px; color: var(--steel-d); }
+  .ai-h small { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ai .go { background: var(--steel); color: #fff; padding: 8px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .ai .go:disabled { background: #A9B5C4; }
+  .ai .photos { margin-top: 12px; }
+  .ai .photo.add { background: var(--card); }
+  .ai .in { margin-top: 10px; background: var(--card); }
+  .ai .res { background: var(--card); border: 1px solid var(--line); padding: 12px; margin-top: 12px; font-size: 13.5px; line-height: 1.6; }
+  .ai .res big { display: block; font: 700 22px var(--en); }
+  .ai .res .why { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .ai-on { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--steel); background: var(--steel-soft); color: var(--steel-d); padding: 9px 12px; font-size: 13px; margin: 0 0 16px; }
+  .wins { display: grid; gap: 8px; }
+  .win { display: grid; grid-template-columns: 1fr auto; align-items: center; border: 1px solid var(--line); background: var(--card); padding: 14px; text-align: left; }
+  .win b { font: 700 20px var(--en); letter-spacing: 1px; }
+  .win small { display: block; font-size: 12.5px; color: var(--muted); }
+  .win span { font: 500 11px var(--mono); color: var(--steel-d); }
+  .win.on { background: var(--steel); color: #fff; border-color: var(--steel); }
+  .win.on small, .win.on span { color: #DCE6F2; }
+  .win:disabled { opacity: .5; cursor: default; }
+  .win:disabled span { color: var(--red); }
+  .aislip { border: 1px solid var(--line); background: var(--card); padding: 10px 12px; font-size: 13px; margin: 0 0 16px; text-align: left; line-height: 1.55; }
+  .aislip.pass { border-color: var(--steel); color: var(--steel-d); }
+  .aislip.fail { border-color: var(--red); color: var(--red); }
   .done { text-align: center; padding-top: 24px; }
   .done .tick { width: 72px; height: 72px; margin: 0 auto 16px; background: var(--steel); color: #fff; display: grid; place-items: center; font-size: 36px; }
   .loading { text-align: center; color: var(--muted); padding: 60px 0; font: 500 12px var(--mono); letter-spacing: 2px; }
@@ -202,8 +227,9 @@ let C = null;          // config จาก backend
 let profile = null;
 let draft = null;      // ข้อมูลการจองที่กำลังกรอก
 let page = 'book', step = 1, my = null, myTab = 'up';
+let aiPanel = null;    // { photos: [ผมตอนนี้, ทรงที่อยากได้], wish, loading, result, error }
 
-const newDraft = () => ({ length: 'M', services: [], stylist: 'any', date: null, time: null,
+const newDraft = () => ({ length: 'M', services: [], stylist: 'any', date: null, time: null, flex: false, window: null, ai: null,
   name: '', phone: '', pronoun: 'ไม่ระบุ', chemicals: [], note: '', photos: [], slip: null, consent: false, reschedule: null });
 
 async function api(payload) {
@@ -220,8 +246,12 @@ const priceTag = (s, len) => baht(priceOf(s, len)) + (s.from || len === 'XL' ? '
 const splitSvc = str => String(str).split(/\s*[+,]\s*/).filter(Boolean);
 const quote = () => {
   const svcs = draft.services.map(svcById);
-  return { svcs, minutes: svcs.reduce((a, s) => a + s.min, 0), price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
+  const extra = draft.ai ? draft.ai.extraMinutes : 0;
+  return { svcs, extra, minutes: svcs.reduce((a, s) => a + s.min, 0) + extra, price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
 };
+const winOf = id => (C.shop.windows || []).find(w => w.id === id);
+const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const winRange = w => `${hhmm(w.from)}–${hhmm(w.to)}`;
 const stylistName = id => id === 'any' ? 'ใครก็ได้' : (C.stylists.find(s => s.id === id) || {}).name;
 
 // ---------- rendering helpers ----------
@@ -259,12 +289,14 @@ function stepService() {
   $('view').innerHTML = `${header(1, 'SERVICE')}
     <h1>วันนี้ทำอะไรดี?</h1>
     <p class="lead">ผมคุณยาวแค่ไหน? ราคาคิดตามความยาวผม (มาตรฐานสากล) ไม่แบ่งราคาตามเพศ</p>
+    ${aiBox()}
     <div class="seg">${C.lengths.map((l, i) => `<button data-len="${l.code}" class="${draft.length === l.code ? 'on' : ''}">
       <span class="len" style="height:${10 + i * 7}px"></span><span>${l.th}<small>${l.code}</small></span></button>`).join('')}</div>
     ${(C.lengths.find(l => l.code === draft.length) || {}).note ? `<p class="lead" style="margin:10px 0 0">${esc(C.lengths.find(l => l.code === draft.length).note)}</p>` : ''}
     <div style="margin-top:8px">${C.services.map(s => `<button class="svc ${draft.services.includes(s.id) ? 'on' : ''}" data-svc="${s.id}">
       <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${s.min} MIN</small></span>
       <span class="price">${priceTag(s, draft.length)}</span></button>`).join('')}</div>`;
+  bindAiBox();
   $('view').querySelectorAll('[data-len]').forEach(b => b.onclick = () => { draft.length = b.dataset.len; stepService(); });
   $('view').querySelectorAll('[data-svc]').forEach(b => b.onclick = () => {
     const id = b.dataset.svc;
@@ -274,6 +306,59 @@ function stepService() {
   });
   foot(`<small>${q.svcs.length} บริการ · ${q.minutes} นาที</small><b>${baht(q.price)}</b>`, ctaLabel('ถัดไป', 'NEXT'),
     () => go('book', 2), !q.svcs.length);
+}
+
+// AI ประเมินจากรูป: แนะนำความยาว บริการ และเวลาเผื่อ (ราคามาจากตารางราคาร้าน)
+function aiBox() {
+  if (!C.ai) return '';
+  if (draft.ai && !aiPanel) return `<div class="ai-on"><span>✦ ใช้ผลประเมิน AI แล้ว${draft.ai.extraMinutes ? ` · เผื่อเวลา +${draft.ai.extraMinutes} นาที` : ''}</span>
+    <button id="aiOff" aria-label="ไม่ใช้ผล AI">✕</button></div>`;
+  if (!aiPanel) return `<div class="ai frame"><div class="ai-h"><div><b>✦ AI ช่วยประเมิน</b>
+    <small>ไม่แน่ใจว่าต้องทำอะไร? ถ่ายรูปผมตอนนี้ AI จะแนะนำบริการ เวลา และราคาโดยประมาณ</small></div>
+    <button class="go" id="aiOpen">ลองเลย</button></div></div>`;
+  const a = aiPanel, x = a.result;
+  const slot = (i, label) => a.photos[i] ? `<div class="photo"><img src="${a.photos[i]}" alt="${label}"><button data-airm="${i}" aria-label="ลบรูป">×</button></div>`
+    : `<button class="photo add" data-aiadd="${i}">⇪<br>${label}</button>`;
+  return `<div class="ai frame"><div class="ai-h"><div><b>✦ AI ช่วยประเมิน</b><small>รูปใช้ประเมินเท่านั้น ไม่ถูกบันทึกจนกว่าจะกดจอง</small></div>
+      <button id="aiClose" aria-label="ปิด">✕</button></div>
+    <div class="photos">${slot(0, 'ผมตอนนี้ *')}${slot(1, 'ทรงที่อยากได้')}<div></div></div>
+    <input class="in" id="aiWish" maxlength="300" placeholder="อยากได้ทรงแบบไหน เช่น ซอยสั้นให้ดูเบา ทำสีน้ำตาล" value="${esc(a.wish)}">
+    <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="go" id="aiRun" ${a.photos[0] && !a.loading ? '' : 'disabled'}>${a.loading ? 'กำลังประเมิน…' : 'ประเมิน'}</button></div>
+    ${a.error ? `<p class="err">${esc(a.error)}</p>` : ''}
+    ${x ? `<div class="res"><span class="label">ผลประเมิน · ความมั่นใจ${esc(x.confidence)}</span>
+      <big>${x.services.map(id => esc(svcById(id).th)).join(' + ')}</big>
+      ผม${esc((C.lengths.find(l => l.code === x.length) || {}).th)} (${x.length}) · ${esc(x.thickness)}<br>
+      ใช้เวลาประมาณ <b>${x.minutes} นาที</b>${x.extraMinutes ? ` (รวมเผื่อ ${x.extraMinutes} นาที)` : ''} · ราคาประมาณ <b>${baht(x.price)}${x.length === 'XL' ? '+' : ''}</b>
+      <div class="why">${esc(x.reason)}</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="go" id="aiUse">ใช้ผลนี้</button></div></div>` : ''}
+  </div>`;
+}
+function bindAiBox() {
+  const on = (id, fn) => { if ($(id)) $(id).onclick = fn; };
+  const keep = () => { if ($('aiWish')) aiPanel.wish = $('aiWish').value; };
+  on('aiOpen', () => { aiPanel = { photos: [], wish: '', loading: false, result: null, error: '' }; stepService(); });
+  on('aiClose', () => { aiPanel = null; stepService(); });
+  on('aiOff', () => { draft.ai = null; draft.time = null; stepService(); });
+  $('view').querySelectorAll('[data-aiadd]').forEach(b => b.onclick = () => { keep();
+    pickImage(img => { aiPanel.photos[Number(b.dataset.aiadd)] = img; aiPanel.result = null; stepService(); }); });
+  $('view').querySelectorAll('[data-airm]').forEach(b => b.onclick = () => { keep(); aiPanel.photos[Number(b.dataset.airm)] = null; aiPanel.result = null; stepService(); });
+  on('aiRun', async () => {
+    keep(); aiPanel.loading = true; aiPanel.error = ''; stepService();
+    try {
+      const r = await api({ action: 'ai_estimate', photos: aiPanel.photos.filter(Boolean), wish: aiPanel.wish, chemicals: draft.chemicals });
+      aiPanel.result = r.estimate;
+    } catch (e) { aiPanel.error = e.message; }
+    aiPanel.loading = false;
+    if (page === 'book' && step === 1) stepService();
+  });
+  on('aiUse', () => {
+    const x = aiPanel.result;
+    Object.assign(draft, { length: x.length, services: x.services, time: null, ai: { extraMinutes: x.extraMinutes, summary: x.summary } });
+    const ref = aiPanel.photos[1];
+    if (ref && !draft.photos.includes(ref) && draft.photos.length < 3) draft.photos.push(ref);
+    aiPanel = null;
+    stepService();
+  });
 }
 
 // ---------- STEP 2: stylist ----------
@@ -302,17 +387,34 @@ async function stepDate() {
     <div class="days">${C.dates.map(d => { const x = parseYmd(d.date);
       return `<button class="day ${d.date === draft.date ? 'on' : ''}" data-date="${d.date}" ${d.closed ? 'disabled' : ''}>
         <small>${TH_DAY[x.getDay()]}</small><b>${x.getDate()}</b></button>`; }).join('')}</div>
-    <div class="eyebrow"><span class="label">เวลาว่างกับ ${esc(stylistName(draft.stylist))}</span><span class="label">${minutes} MIN</span></div>
-    <div id="times" class="times"><div class="loading" style="grid-column:1/-1;padding:20px">CHECKING…</div></div>
-    <div class="legend"><span><i></i>ว่าง</span><span><i class="full"></i>เต็ม</span></div>`;
-  $('view').querySelectorAll('[data-date]').forEach(b => b.onclick = () => { draft.date = b.dataset.date; draft.time = null; stepDate(); });
-  const footFor = () => foot(`<small>${draft.date ? thDate(draft.date) : ''}</small><b>${draft.time ? draft.time + ' น.' : 'เลือกเวลา'}</b>`,
-    ctaLabel('ถัดไป', 'NEXT'), () => go('book', draft.reschedule ? 5 : 4), !draft.time);
+    ${draft.reschedule || !(C.shop.windows || []).length ? '' : `<div class="seg center" style="margin-top:6px">
+      <button data-mode="fixed" class="${draft.flex ? '' : 'on'}">เลือกเวลาเอง</button>
+      <button data-mode="flex" class="${draft.flex ? 'on' : ''}">ยืดหยุ่น · เลือกช่วง</button></div>
+      ${draft.flex ? '<p class="lead" style="margin:10px 0 0">ไม่ต้องล็อกเวลาเป๊ะ เลือกช่วงที่สะดวก ระบบจะจัดเวลาที่ช่างว่างพอดีให้ แล้วแจ้งเวลาใน LINE ทันที</p>' : ''}`}
+    <div class="eyebrow"><span class="label">${draft.flex ? 'ช่วงที่ว่าง' : 'เวลาว่าง'}กับ ${esc(stylistName(draft.stylist))}</span><span class="label">${minutes} MIN</span></div>
+    <div id="times" class="${draft.flex ? 'wins' : 'times'}"><div class="loading" style="grid-column:1/-1;padding:20px">CHECKING…</div></div>
+    ${draft.flex ? '' : '<div class="legend"><span><i></i>ว่าง</span><span><i class="full"></i>เต็ม</span></div>'}`;
+  $('view').querySelectorAll('[data-date]').forEach(b => b.onclick = () => { draft.date = b.dataset.date; draft.time = null; draft.window = null; stepDate(); });
+  $('view').querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { draft.flex = b.dataset.mode === 'flex'; draft.time = null; draft.window = null; stepDate(); });
+  const footFor = () => foot(`<small>${draft.date ? thDate(draft.date) : ''}</small><b>${draft.flex
+      ? (draft.window ? winOf(draft.window).th : 'เลือกช่วง') : (draft.time ? draft.time + ' น.' : 'เลือกเวลา')}</b>`,
+    ctaLabel('ถัดไป', 'NEXT'), () => go('book', draft.reschedule ? 5 : 4), !(draft.flex ? draft.window : draft.time));
   footFor();
   const forDate = draft.date;
   try {
     const r = await api({ action: 'slots', date: forDate, minutes, stylist: draft.stylist, excludeId: draft.reschedule && draft.reschedule.id });
     if (forDate !== draft.date || page !== 'book' || step !== 3) return;
+    if (draft.flex) {
+      $('times').innerHTML = r.closed ? '<div class="empty">วันนี้ร้านปิด</div>' : r.windows.map(x => { const w = winOf(x.id);
+        return `<button class="win ${x.id === draft.window ? 'on' : ''}" data-win="${x.id}" ${x.free ? '' : 'disabled'}>
+          <div><b>${esc(w.en)}</b><small>${esc(w.th)} · ${winRange(w)} น.</small></div><span>${x.free ? 'ว่าง' : 'เต็ม'}</span></button>`; }).join('');
+      $('times').querySelectorAll('[data-win]').forEach(b => b.onclick = () => {
+        draft.window = b.dataset.win;
+        $('times').querySelectorAll('.win').forEach(x => x.classList.toggle('on', x === b));
+        footFor();
+      });
+      return;
+    }
     const free = r.slots.filter(s => s.free);
     $('times').innerHTML = r.slots.length ? r.slots.map(s => `<button class="time ${s.time === draft.time ? 'on' : ''}" data-time="${s.time}" ${s.free ? '' : 'disabled'}>${s.time}</button>`).join('')
       : '<div class="empty" style="grid-column:1/-1">วันนี้ร้านปิด</div>';
@@ -372,10 +474,13 @@ function stepReview() {
     <h1>${r ? 'ยืนยันการเลื่อนนัด' : 'เช็กก่อนยืนยัน'}</h1>
     <div class="sum frame" style="margin-top:14px">
       <div class="r two"><div><span class="label">Date</span><big>${thDate(draft.date)}</big></div>
-        <div><span class="label">Time</span><big>${draft.time} น.</big></div></div>
+        <div><span class="label">Time</span>${draft.flex && draft.window
+          ? `<big>${esc(winOf(draft.window).th)}</big><small style="color:var(--muted);font-size:12px">${winRange(winOf(draft.window))} · ระบบจัดเวลาให้</small>`
+          : `<big>${draft.time} น.</big>`}</div></div>
       <div class="r" style="display:flex;justify-content:space-between"><div><span class="label">Stylist</span><big>${esc(r ? r.stylist : stylistName(draft.stylist))}</big></div>
         <button class="link" id="editSty">${r ? '' : 'แก้ไข'}</button></div>
       <div class="r"><span class="label">Services</span>${services}</div>
+      ${!r && q.extra ? `<div class="r" style="font-size:13px;color:var(--steel-d)">✦ AI เผื่อเวลาตามสภาพผม +${q.extra} นาที · รวม ${q.minutes} นาที</div>` : ''}
       <div class="r total"><span>ราคาประเมิน</span><b>${baht(r ? r.price : q.price)}</b></div>
     </div>
     ${r ? '<p class="lead" style="margin-top:14px">มัดจำเดิมยังใช้ได้ เลื่อนนัดฟรีเมื่อเลื่อนก่อนเวลานัดเกิน 24 ชม.</p>' : `
@@ -385,6 +490,7 @@ function stepReview() {
         <div>${C.promptpay ? 'สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป' : '<b style="color:#fff">โหมดสาธิต ไม่ต้องโอนจริง</b><br>ร้านจริงจะให้สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป'}
           · หักออกจากค่าบริการวันจริง · เลื่อนนัดฟรีก่อน 24 ชม.</div></div>
       <button class="slip" id="slipBtn">${draft.slip ? '✓ แนบสลิปแล้ว (แตะเพื่อเปลี่ยน)' : '⇪ แนบสลิปโอน / Upload slip'}</button>
+      ${C.ai ? '<p style="font-size:11.5px;color:#9DB7D5;margin:8px 0 0">✦ AI ตรวจสลิปให้ทันที ผ่านแล้วยืนยันคิวอัตโนมัติ ไม่ต้องรอร้าน</p>' : ''}
       <p style="font-size:11.5px;color:#9DB7D5;margin:8px 0 0">แนบตอนนี้ หรือแนบทีหลังในเมนู MY BOOKING ภายใน ${C.shop.holdMin} นาที ไม่อย่างนั้นคิวจะถูกปล่อย</p>
     </div>`}
     <p class="lead" style="margin-top:14px">ราคาเป็นราคาประเมิน ช่างจะยืนยันราคาจริงหลังดูสภาพผมก่อนเริ่มงาน</p>
@@ -402,17 +508,18 @@ async function submit() {
       res = await api({ action: 'reschedule', id: draft.reschedule.id, date: draft.date, time: draft.time });
     } else {
       res = await api({ action: 'book', services: draft.services, length: draft.length, stylist: draft.stylist,
-        date: draft.date, time: draft.time, name: draft.name.trim(), phone: draft.phone, pronoun: draft.pronoun,
+        date: draft.date, time: draft.flex ? null : draft.time, window: draft.flex ? draft.window : null, ai: draft.ai,
+        name: draft.name.trim(), phone: draft.phone, pronoun: draft.pronoun,
         chemicals: draft.chemicals, note: draft.note, photos: draft.photos, slip: draft.slip, consent: draft.consent });
     }
     my = null;
     go('done');
-    renderDone(res.booking, Boolean(draft.reschedule));
+    renderDone(res.booking, Boolean(draft.reschedule), res.aiSlip);
     draft = { ...newDraft(), name: draft.name, phone: draft.phone, pronoun: draft.pronoun, length: draft.length };
   } catch (e) {
     $('rErr').textContent = e.message; $('rErr').hidden = false;
     $('cta').disabled = false; $('cta').innerHTML = ctaLabel('ลองอีกครั้ง', 'RETRY');
-    if (/เพิ่งถูกจอง|ผ่านไปแล้ว/.test(e.message)) { draft.time = null; setTimeout(() => go('book', 3), 1600); }
+    if (/เพิ่งถูกจอง|ผ่านไปแล้ว|เต็มแล้ว/.test(e.message)) { draft.time = null; draft.window = null; setTimeout(() => go('book', 3), 1600); }
   }
 }
 
@@ -420,7 +527,7 @@ const statusLine = b => b.status === 'รอมัดจำ'
   ? (/รอตรวจ/.test(b.depositStatus) ? 'PENDING · รอร้านตรวจสลิป' : 'PENDING · รอแนบสลิปมัดจำ')
   : b.status === 'ยืนยันแล้ว' ? '✓ CONFIRMED' : esc(b.status);
 
-function renderDone(b, moved) {
+function renderDone(b, moved, aiSlip) {
   if (!b) return;
   const pending = b.status === 'รอมัดจำ', slipped = /รอตรวจ/.test(b.depositStatus);
   const d = parseYmd(b.date);
@@ -430,17 +537,23 @@ function renderDone(b, moved) {
       : !pending ? 'ส่งรายละเอียดไปในแชต LINE แล้ว และจะเตือนอีกครั้งก่อนถึงนัด 1 วัน'
       : slipped ? 'ได้รับสลิปแล้ว ร้านจะตรวจและส่งข้อความยืนยันการจองในแชต LINE'
       : `แนบสลิปมัดจำภายใน ${C.shop.holdMin} นาที เพื่อล็อกคิวนี้ไว้`}</p></div>
+    ${aiSlip ? `<div class="aislip ${aiSlip.verdict === 'pass' ? 'pass' : aiSlip.verdict === 'fail' ? 'fail' : ''}">${aiSlip.verdict === 'pass'
+      ? '✦ AI ตรวจสลิปผ่าน · ยอด เวลา และบัญชีผู้รับถูกต้อง' : aiSlip.verdict === 'fail'
+      ? `✦ AI ตรวจสลิปยังไม่ผ่าน: ${aiSlip.reasons.map(esc).join(' · ')}<br>ร้านจะตรวจซ้ำให้ หรือแนบสลิปใหม่ได้`
+      : esc(aiSlip.reasons[0] || '')}</div>` : ''}
+    ${b.window && winOf(b.window) ? `<div class="aislip pass">ระบบจัดเวลาให้ <b>${b.start} น.</b> ใน${esc(winOf(b.window).th)}ที่เลือก ช่าง ${esc(b.stylist)} ว่างพอดี</div>` : ''}
     <div class="bk frame"><div class="cal"><small>${EN_DAY[d.getDay()]}</small><b>${d.getDate()}</b><small>${EN_MON[d.getMonth()]}</small></div>
       <div class="info"><span class="st">${statusLine(b)} · ${esc(b.id)}</span><big>${b.start} – ${b.end}</big><small>${esc(b.stylist)} · ${esc(b.services)}</small></div></div>
     <p class="err" id="dErr" hidden></p>`;
-  if (pending && !slipped) foot('', ctaLabel('แนบสลิปตอนนี้', 'UPLOAD SLIP'), () => uploadSlip(b, ok => { if (ok) renderDone({ ...b, depositStatus: 'แนบสลิปแล้ว · รอตรวจ' }, moved); }));
+  const again = (ok, res) => { if (ok) renderDone(res.booking || { ...b, depositStatus: 'แนบสลิปแล้ว · รอตรวจ' }, moved, res.aiSlip); };
+  if (pending && (!slipped || (aiSlip && aiSlip.verdict === 'fail'))) foot('', ctaLabel(slipped ? 'แนบสลิปใหม่' : 'แนบสลิปตอนนี้', 'UPLOAD SLIP'), () => uploadSlip(b, again));
   else foot('', ctaLabel('ดูนัดของฉัน', 'MY BOOKING'), () => go('my'));
 }
 
 function uploadSlip(b, cb) {
   pickImage(async img => {
-    try { await api({ action: 'slip', id: b.id, slip: img }); my = null; cb(true); }
-    catch (e) { alert(e.message); cb(false); }
+    try { const res = await api({ action: 'slip', id: b.id, slip: img }); my = null; cb(true, res); }
+    catch (e) { alert(e.message); cb(false, {}); }
   });
 }
 
@@ -494,7 +607,11 @@ async function renderMy() {
   });
   $('myBody').querySelectorAll('[data-again]').forEach(btn => btn.onclick = () => rebookFrom(find(btn.dataset.again)));
   $('myBody').querySelectorAll('[data-slip]').forEach(btn => btn.onclick = () =>
-    uploadSlip(find(btn.dataset.slip), ok => { if (ok) renderMy(); }));
+    uploadSlip(find(btn.dataset.slip), (ok, res) => {
+      if (ok && res.aiSlip && res.aiSlip.verdict === 'pass') alert('AI ตรวจสลิปผ่าน ยืนยันคิวแล้ว ✓');
+      else if (ok && res.aiSlip && res.aiSlip.verdict === 'fail') alert('AI ตรวจสลิปยังไม่ผ่าน: ' + res.aiSlip.reasons.join(' · ') + '\nร้านจะตรวจซ้ำให้');
+      if (ok) renderMy();
+    }));
 }
 
 /** จองซ้ำ: ได้บริการและช่างคนเดิม แล้วไปเลือกวัน-เวลาเลย */

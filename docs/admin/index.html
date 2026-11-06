@@ -470,7 +470,7 @@ async function loadDay() {
   html += C.stylists.map(s => `<div class="col" style="height:${rows * ROW}px">${live.filter(b => b.stylist === s.name).map(b => {
     const top = (toMin(b.start) - open) / STEP * ROW, h = Math.max(ROW - 2, (toMin(b.end) - toMin(b.start)) / STEP * ROW - 2);
     return `<button class="blk ${esc(b.status)}" style="top:${top}px;height:${h}px" data-id="${esc(b.id)}">
-      <b>${b.start}–${b.end} · ${esc(b.name)}</b><small>${esc(b.services)}${b.channel !== 'LINE' ? ' · ' + esc(b.channel) : ''}</small></button>`;
+      <b>${b.start}–${b.end} · ${esc(b.name)}${b.window ? ' ⟷' : ''}${b.aiEstimate ? ' ✦' : ''}</b><small>${esc(b.services)}${b.channel !== 'LINE' ? ' · ' + esc(b.channel) : ''}</small></button>`;
   }).join('')}</div>`).join('');
   $('sched').innerHTML = html;
   $('sched').querySelectorAll('[data-id]').forEach(el => el.onclick = () => openDrawer(el.dataset.id));
@@ -485,7 +485,7 @@ function openDrawer(id) {
     <div class="eyebrow">${esc(b.id)}</div><h1 style="font-size:22px">${esc(b.name)}</h1>
     <span class="pill ${esc(b.status)}">${esc(b.status)}</span>
     <div class="kv">
-      <span>เวลา</span><b>${b.start} – ${b.end} (${b.duration} นาที)</b>
+      <span>เวลา</span><b>${b.start} – ${b.end} (${b.duration} นาที)${b.window ? `<br><small style="font-weight:400;color:var(--muted)">ลูกค้าเลือก${esc((C.shop.windows.find(w => w.id === b.window) || {}).th || 'ช่วงเวลา')} · ระบบจัดเวลาให้ ย้ายได้ภายในช่วงนี้</small>` : ''}</b>
       <span>ช่าง</span><div>${esc(b.stylist)}</div>
       <span>บริการ</span><div>${esc(b.services)} · ความยาว ${esc(b.length)}</div>
       <span>ราคาประเมิน</span><div>${baht(b.price)}</div>
@@ -494,8 +494,11 @@ function openDrawer(id) {
       <span>สรรพนาม</span><div>${esc(b.pronoun || '–')}</div>
       <span>เคมี 12 เดือน</span><div>${esc(b.chem || '–')}</div>
       <span>หมายเหตุ</span><div>${esc(b.note || '–')}</div>
+      ${b.aiEstimate ? `<span>✦ AI ประเมิน</span><div>${esc(b.aiEstimate)}</div>` : ''}
       <span>รูปอ้างอิง</span><div class="thumbs">${b.photos.length ? b.photos.map((u, i) => `<a href="${esc(u)}" target="_blank">รูป ${i + 1} ↗</a>`).join('') : '–'}</div>
       <span>สลิป</span><div>${b.slip ? `<a href="${esc(b.slip)}" target="_blank">เปิดสลิป ↗</a>` : '–'}</div>
+      ${b.slip ? `<span>✦ AI ตรวจสลิป</span><div><span style="color:${/^✓/.test(b.aiSlip) ? 'var(--green)' : /^✗/.test(b.aiSlip) ? 'var(--red)' : 'var(--muted)'}">${esc(b.aiSlip || 'ยังไม่ได้ตรวจ')}</span>
+        ${b.status === 'รอมัดจำ' && C.ai ? '<button class="btn ghost" style="padding:3px 10px;margin-left:6px" id="aiSlip">ตรวจอีกครั้ง</button>' : ''}</div>` : ''}
       <span>ลูกค้า</span><div>${b.channel}${b.channel === 'LINE' ? (b.visit > 1 ? ` · มาครั้งที่ ${b.visit}` : ' · ลูกค้าใหม่') : ''}</div>
       <span>จองเมื่อ</span><div>${esc(b.created)}</div>
       ${b.loyalty ? `<span>แต้มสะสม</span><div>${b.loyalty.memberNo ? '№ ' + esc(b.loyalty.memberNo) + ' · ' : ''}${Math.min(b.loyalty.current, 10)} / 10 แต้ม</div>
@@ -524,6 +527,15 @@ function openDrawer(id) {
     try { await adminApi({ action: 'admin_use_voucher', code: btn.dataset.voucher }); closeDrawer(); await loadDay(); }
     catch (e) { alert(e.message); btn.disabled = false; }
   });
+  if ($('aiSlip')) $('aiSlip').onclick = async () => {
+    $('aiSlip').disabled = true; $('aiSlip').textContent = 'กำลังตรวจ…';
+    try {
+      const r = await adminApi({ action: 'admin_ai_slip', id: b.id });
+      alert(r.aiSlip.verdict === 'pass' ? 'AI ตรวจผ่าน' + (r.booking.status === 'ยืนยันแล้ว' ? ' · ยืนยันนัดและส่ง LINE แล้ว' : '')
+        : 'AI ตรวจไม่ผ่าน: ' + r.aiSlip.reasons.join(' · '));
+      closeDrawer(); await loadDay();
+    } catch (e) { alert(e.message); $('aiSlip').disabled = false; $('aiSlip').textContent = 'ตรวจอีกครั้ง'; }
+  };
   if ($('payOk')) $('payOk').onclick = async () => {
     $('payOk').disabled = true;
     try { await adminApi({ action: 'admin_confirm', id: b.id }); closeDrawer(); await loadDay(); } catch (e) { alert(e.message); $('payOk').disabled = false; }
