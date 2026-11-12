@@ -260,7 +260,7 @@ const quote = () => {
 const winOf = id => (C.shop.windows || []).find(w => w.id === id);
 const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const winRange = w => `${hhmm(w.from)}–${hhmm(w.to)}`;
-const portrait = s => `<div class="pic"><img src="assets/stylists/${s.id}.svg" alt="ภาพประกอบช่าง ${esc(s.name)}" loading="lazy"></div>`;
+const portrait = s => `<div class="pic"><img src="assets/stylists/${s.id}.jpg" alt="ภาพตัวอย่างช่าง ${esc(s.name)}" loading="lazy"></div>`;
 const stylistName = id => id === 'any' ? 'ใครก็ได้' : (C.stylists.find(s => s.id === id) || {}).name;
 
 // ---------- rendering helpers ----------
@@ -749,8 +749,8 @@ function renderStylists() {
 function renderLookbook() {
   const looks = [['Korean Two-block', 'Max', 'two-block'], ['Soft Wolf Cut', 'Tee', 'wolf-cut'], ['Balayage Ash', 'Ploy', 'balayage-ash'],
     ['Body Perm', 'Ken', 'body-perm'], ['Glass Hair', 'Nina', 'glass-hair'], ['French Bob', 'Max', 'french-bob']];
-  $('view').innerHTML = `<span class="label">LOOKBOOK</span><h1>ผลงาน</h1><p class="lead">ตัวอย่างทรงยอดนิยมของร้าน (ภาพประกอบสำหรับต้นแบบ)</p>
-    <div class="look">${looks.map(([n, s, f]) => `<div class="pic frame" style="background-image:url(assets/looks/${f}.svg)" role="img" aria-label="ภาพประกอบทรง ${n}"><div><b>${n}</b><small>by ${s}</small></div></div>`).join('')}</div>`;
+  $('view').innerHTML = `<span class="label">LOOKBOOK</span><h1>ผลงาน</h1><p class="lead">ตัวอย่างทรงยอดนิยมของร้าน (ภาพตัวอย่างสร้างด้วย AI สำหรับต้นแบบ)</p>
+    <div class="look">${looks.map(([n, s, f]) => `<div class="pic frame" style="background-image:url(assets/looks/${f}.jpg)" role="img" aria-label="ภาพตัวอย่างทรง ${n}"><div><b>${n}</b><small>by ${s}</small></div></div>`).join('')}</div>`;
   foot('', ctaLabel('จองทรงนี้', 'BOOK NOW'), () => go('book', 1));
 }
 function renderAbout() {
