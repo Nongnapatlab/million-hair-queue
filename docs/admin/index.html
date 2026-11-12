@@ -134,6 +134,35 @@
   .linkgrid a:hover { border-color: var(--steel); }
   .linkgrid a b { display: block; } .linkgrid a small { color: var(--muted); font-size: 12px; word-break: break-all; }
   .guide ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; font-size: 13.5px; }
+  /* analytics */
+  .note { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin: 8px 0 0; }
+  .note b { color: var(--ink); }
+  .src { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .src p { margin: 0; }
+  .tag { display: inline-block; font: 500 10.5px var(--mono); padding: 2px 8px; letter-spacing: .5px; background: var(--steel-soft); color: var(--steel-d); }
+  .tag.on { background: var(--green); color: #fff; }
+  td.more { color: var(--red); font-weight: 600; } td.less { color: var(--green); font-weight: 600; }
+  td small { color: var(--muted); }
+  .hbars { display: grid; gap: 6px; }
+  .hbar { display: grid; grid-template-columns: minmax(110px, 38%) 1fr 64px; gap: 10px; align-items: center; font-size: 12.5px; }
+  .hbar .track { height: 12px; background: #ECEEF1; }
+  .hbar .track i { display: block; height: 100%; background: var(--steel); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .hbar b { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .hbar small { color: var(--muted); font-weight: 400; }
+  .vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; text-align: center; }
+  .vs div { background: var(--card); border: 1px solid var(--line); padding: 10px; }
+  .vs div.new { border-color: var(--steel); box-shadow: inset 0 3px 0 var(--steel); }
+  .vs b { display: block; font: 700 26px var(--en); }
+  .vs span { font-size: 12px; color: var(--muted); }
+  .hist svg { width: 100%; height: auto; display: block; }
+  .hist .leg { display: flex; gap: 16px; font-size: 12px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+  .hist .leg i { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 5px; }
+  .tip { position: fixed; pointer-events: none; background: var(--navy); color: #fff; font-size: 12px; padding: 6px 9px; z-index: 30; max-width: 260px; }
+  .h3 { font: 600 12px var(--th); color: var(--muted); margin: 18px 0 8px; }
+  [data-page=ana] th { font: 600 11.5px var(--th); letter-spacing: 0; }
+  .h3:first-child { margin-top: 0; }
+  .sect { font: 700 20px var(--th); margin: 26px 0 4px; }
+  .sect + .note { margin: 0 0 14px; }
   @media (max-width: 900px) {
     .miles, .people, .tcols { grid-template-columns: 1fr; }
     .layout { grid-template-columns: 1fr; } aside { flex-direction: row; flex-wrap: wrap; } aside .grp, aside .me { display: none; }
@@ -153,6 +182,7 @@
     <div class="grp">OPERATIONS</div>
     <a data-view="sched">ตารางนัด</a>
     <a data-view="report">รายงาน</a>
+    <a data-view="ana">Analytics</a>
     <div class="grp">TEAM</div>
     <a data-view="team">งานทีม</a>
     <a data-view="links">ลิงก์ & คู่มือ</a>
@@ -281,6 +311,17 @@
       </div>
       <div class="card"><h2>รายการนัดทั้งหมด</h2><div id="rList" style="overflow-x:auto"></div></div>
     </section>
+
+    <!-- Analytics -->
+    <section data-page="ana" hidden>
+      <div class="top">
+        <div><div class="eyebrow">ANALYTICS · DYNAMIC TIME & DEPOSIT</div><h1>วิเคราะห์ข้อมูลนัด</h1>
+          <div style="color:var(--muted)">เรียนรู้เวลาทำผมจริงและพฤติกรรม no-show จากนัดที่ผ่านมา แล้วตั้งเวลาจองและมัดจำให้พอดีกับแต่ละนัด</div></div>
+        <div class="row noprint"><button class="btn ghost" id="anaReload">↻ คำนวณใหม่</button><button class="btn dark" id="anaPrint">บันทึก PDF</button></div>
+      </div>
+      <div class="card" id="anaSrc"><p class="empty">กำลังโหลด…</p></div>
+      <div id="anaBody"></div>
+    </section>
   </main>
 </div>
 
@@ -325,6 +366,7 @@ document.querySelectorAll('aside a[data-view]').forEach(a => a.onclick = () => {
   if (v === 'dash') loadDash().catch(e => alert(e.message));
   if (v === 'team') loadTasks().catch(e => alert(e.message));
   if (v === 'links') renderLinks();
+  if (v === 'ana' && !ana) loadAna().catch(e => alert(e.message));
 });
 
 // ---------- dashboard ----------
@@ -670,6 +712,179 @@ $('csv').onclick = () => {
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = `million-hair-report-${ymd(new Date())}.csv`; a.click();
 };
+
+// ---------- analytics ----------
+let ana = null, histSvc = 'cut', histLen = 'L';
+const pct = (x, d = 0) => x == null ? '–' : (x * 100).toFixed(d) + '%';
+const num = (x, d = 0) => x == null ? '–' : Number(x).toFixed(d);
+const LEN_TH = { S: 'สั้น', M: 'ประบ่า', L: 'ยาว' };
+
+function hbars(rows, fmt, sub) {
+  const max = Math.max(0.0001, ...rows.map(r => r.v || 0));
+  return `<div class="hbars">${rows.map(r => `<div class="hbar" data-tip="${esc(r.tip || '')}"><span>${esc(r.label)}</span>
+    <div class="track"><i style="width:${(r.v || 0) / max * 100}%"></i></div><b>${fmt(r.v)}${sub ? `<br><small>${sub(r)}</small>` : ''}</b></div>`).join('')}</div>`;
+}
+const nsBars = g => hbars(g.map(x => ({ label: x.label, v: x.rate, n: x.n, tip: `${x.label}: ไม่มา ${pct(x.rate, 1)} จาก ${x.n} นัด` })),
+  v => pct(v, 1), r => `${r.n} นัด`);
+
+function histogram(id, len) {
+  const xs = ((ana.duration.samples[id] || {})[len]) || [];
+  const row = ana.duration.table.find(r => r.id === id && r.len === len);
+  if (!xs.length) return '<p class="empty">ยังไม่มีข้อมูลบริการนี้ (เฉพาะนัดที่ทำบริการเดียว)</p>';
+  const W = 600, H = 190, P = { l: 30, r: 10, t: 14, b: 26 }, BIN = 5;
+  const lo = Math.floor(Math.min(...xs, row.standard, row.recommended) / BIN) * BIN - BIN;
+  const hi = Math.ceil(Math.max(...xs, row.standard, row.recommended) / BIN) * BIN + BIN;
+  const bins = []; for (let b = lo; b < hi; b += BIN) bins.push({ b, n: 0 });
+  xs.forEach(x => { const i = Math.floor((x - lo) / BIN); if (bins[i]) bins[i].n++; });
+  const max = Math.max(...bins.map(b => b.n));
+  const X = m => P.l + (m - lo) / (hi - lo) * (W - P.l - P.r), Y = n => H - P.b - n / max * (H - P.t - P.b);
+  const bw = X(lo + BIN) - X(lo) - 2;
+  const ticks = []; for (let m = Math.ceil(lo / 30) * 30; m <= hi; m += (hi - lo > 150 ? 30 : 15)) ticks.push(m);
+  const vline = (m, color, dash, label, anchor) => `<line x1="${X(m)}" x2="${X(m)}" y1="${P.t - 6}" y2="${H - P.b}" stroke="${color}" stroke-width="2" ${dash ? 'stroke-dasharray="4 3"' : ''}/>
+    <text x="${X(m) + (anchor === 'end' ? -4 : 4)}" y="${P.t + 2}" font-size="11" fill="var(--ink)" text-anchor="${anchor}">${label}</text>`;
+  const stdLeft = row.standard < row.recommended;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="การกระจายของเวลาทำจริง ${esc(row.th)} ผม${LEN_TH[len]}">
+    <line x1="${P.l}" x2="${W - P.r}" y1="${H - P.b}" y2="${H - P.b}" stroke="var(--line)"/>
+    ${ticks.map(m => `<text x="${X(m)}" y="${H - 8}" font-size="10.5" fill="var(--muted)" text-anchor="middle" font-family="var(--mono)">${m}</text>`).join('')}
+    <text x="${P.l - 6}" y="${P.t + 8}" font-size="10.5" fill="var(--muted)" text-anchor="end" font-family="var(--mono)">${max}</text>
+    ${bins.map(b => b.n ? `<rect x="${X(b.b) + 1}" y="${Y(b.n)}" width="${Math.max(1, bw)}" height="${H - P.b - Y(b.n)}" rx="2" fill="var(--steel)"
+      data-tip="${b.b}–${b.b + BIN} นาที: ${b.n} นัด"/>` : '').join('')}
+    ${vline(row.standard, 'var(--muted)', true, `เดิม ${row.standard}`, stdLeft ? 'end' : 'start')}
+    ${vline(row.recommended, 'var(--navy)', false, `ใหม่ ${row.recommended}`, stdLeft ? 'start' : 'end')}
+  </svg>
+  <div class="leg"><span><i style="border-color:var(--muted);border-top-style:dashed"></i>เวลามาตรฐานเดิม ${row.standard} นาที</span>
+    <span><i style="border-color:var(--navy)"></i>เวลาจองใหม่ (P${Math.round(ana.duration.pctl * 100)}) ${row.recommended} นาที</span>
+    <span>${xs.length} นัด · ค่ากลาง ${row.median} นาที · นาที (แกนนอน)</span></div>`;
+}
+
+function renderAnaSrc() {
+  const m = ana.meta, ap = ana.applied;
+  $('anaSrc').innerHTML = `<div class="src">
+    <p>${m.total ? `<b>${m.total.toLocaleString('en-US')} นัด</b> · ${thShort(m.from)} – ${thShort(m.to)} (${num(m.months, 1)} เดือน)<br>
+      <small style="color:var(--muted)">ข้อมูลจำลอง ${m.sim.toLocaleString('en-US')} · นัดจริง ${m.real.toLocaleString('en-US')} · มีเวลาเริ่ม-เสร็จจริง ${(m.done || 0).toLocaleString('en-US')} นัด</small>`
+      : '<b>ยังไม่มีข้อมูล</b><br><small style="color:var(--muted)">กดสร้างข้อมูลจำลองเพื่อดูว่าถ้าร้านเปิดมาแล้วหลายเดือน ระบบจะวิเคราะห์อะไรได้บ้าง</small>'}</p>
+    <div class="row noprint"><button class="btn ghost" id="simSeed">${m.sim ? 'สร้างข้อมูลจำลองใหม่' : 'สร้างข้อมูลจำลอง 120 วัน'}</button>
+      ${m.sim ? '<button class="btn warn" id="simClear">ลบข้อมูลจำลอง</button>' : ''}</div></div>
+    <div class="src" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+      <p><span class="tag ${ap ? 'on' : ''}">${ap ? 'DYNAMIC · ใช้งานอยู่' : 'FIXED · ค่าตายตัว'}</span>
+        <small style="color:var(--muted);margin-left:6px">${ap ? `นำไปใช้เมื่อ ${esc(ap.appliedAt)} · จากข้อมูล ${(ap.basedOn || {}).total || '–'} นัด`
+          : `ระบบจองยังใช้เวลามาตรฐานและมัดจำ ${baht(C.shop.deposit)} เท่ากันทุกบริการ`}</small></p>
+      <div class="row noprint">${m.total ? `<button class="btn" id="modelApply">${ap ? 'อัปเดตโมเดลด้วยข้อมูลล่าสุด' : 'นำเวลาและมัดจำแบบใหม่ไปใช้กับระบบจอง'}</button>` : ''}
+        ${ap ? '<button class="btn ghost" id="modelReset">กลับไปใช้ค่าตายตัว</button>' : ''}</div></div>`;
+  const act = (id, confirmMsg, payload, after) => { if (!$(id)) return; $(id).onclick = async () => {
+    if (confirmMsg && !confirm(confirmMsg)) return;
+    $(id).disabled = true; $(id).textContent = 'กำลังทำงาน…';
+    try { const d = await adminApi(payload); if (after) after(d); await loadAna(); } catch (e) { alert(e.message); $(id).disabled = false; }
+  }; };
+  act('simSeed', m.sim ? 'สร้างข้อมูลจำลองชุดใหม่ทับชุดเดิม (แท็บ SimHistory)?' : '', { action: 'admin_sim_seed', days: 120 });
+  act('simClear', 'ลบแท็บ SimHistory ทั้งหมด? (นัดจริงไม่ถูกแตะ)', { action: 'admin_sim_clear' });
+  act('modelApply', 'นำเวลาจองและอัตรามัดจำชุดนี้ไปใช้กับการจองใหม่ทุกรายการ?\n(นัดที่จองไว้แล้วไม่เปลี่ยน)', { action: 'admin_model_apply' });
+  act('modelReset', 'กลับไปใช้เวลามาตรฐานและมัดจำแบบเดิม?', { action: 'admin_model_reset' });
+}
+
+function renderAna() {
+  renderAnaSrc();
+  if (ana.empty) { $('anaBody').innerHTML = ''; return; }
+  const D = ana.duration, N = ana.noShow, P = ana.deposit, T = D.test, B = P.backtest;
+  const svcs = C.services.filter(s => ana.duration.table.some(r => r.id === s.id && r.n));
+  const flag = (a, b) => a > b ? 'more' : a < b ? 'less' : '';
+  const sign = d => (d > 0 ? '+' : '') + d;
+
+  $('anaBody').innerHTML = `
+    <div class="kpis">${[
+      ['LATE > 10 MIN', `${pct(T.fixed.late10Pct)} → ${pct(T.model.late10Pct)}`, 'นัดที่ทำเกินเวลาจองเกิน 10 นาที'],
+      ['TIME ERROR (MAE)', `${num(T.fixed.mae)} → ${num(T.model.mae)}`, 'นาที · คลาดจากเวลาจริงเฉลี่ย'],
+      ['NO-SHOW RATE', pct(N.rate, 1), 'ไม่รวม walk-in'],
+      ['LOST / MONTH', baht(N.lostPerMonth), 'มูลค่านัดที่ลูกค้าไม่มา'],
+      ['CSAT ON-TIME / LATE', `${num(D.csat.onTime, 1)} / ${num(D.csat.late, 1)}`, 'คะแนนเมื่อเสร็จตามเวลา / เกินเวลา'],
+      ['AVG DEPOSIT', `${baht(B.old.avgDep)} → ${baht(B.new.avgDep)}`, `${pct(B.cheaperPct)} ของลูกค้าจ่ายมัดจำน้อยลง`],
+    ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b style="font-size:24px">${v}</b><small>${s}</small></div>`).join('')}</div>
+
+    <div class="sect">1 · เวลาทำผมแบบ dynamic</div>
+    <p class="note">ระบบไม่ใช้ 30 / 45 / 60 นาทีแบบเดิมแล้ว แต่ดูว่าบริการนี้กับผมความยาวนี้<b>ใช้เวลาทำจริงเท่าไหร่</b> (จากเวลาที่ช่างกด “เริ่มบริการ” ถึง “เสร็จสิ้น”)
+      แล้วจองเวลาเท่ากับ <b>P${Math.round(D.pctl * 100)}</b> คือ 8 ใน 10 นัดจะเสร็จทันเวลา ได้เวลาเป็นนาทีจริง เช่น 38 หรือ 46 นาที นัดที่ทำหลายบริการจะรวมเวลาของแต่ละบริการ</p>
+    <div class="grid2">
+      <div class="card"><h2>การกระจายของเวลาทำจริง</h2>
+        <div class="row noprint" style="margin-bottom:8px"><select id="hSvc">${svcs.map(s => `<option value="${s.id}" ${s.id === histSvc ? 'selected' : ''}>${esc(s.th)}</option>`).join('')}</select>
+          <div class="tabs" id="hLen">${['S', 'M', 'L'].map(l => `<button data-l="${l}" class="${l === histLen ? 'on' : ''}">${l} · ${LEN_TH[l]}</button>`).join('')}</div></div>
+        <div class="hist" id="hist">${histogram(histSvc, histLen)}</div></div>
+      <div class="card"><h2>ทดสอบกับนัดที่โมเดลไม่เคยเห็น</h2>
+        <p class="note" style="margin:0 0 10px">เรียนรู้จาก ${T.trainN.toLocaleString('en-US')} นัดแรก แล้วทดสอบกับ ${T.n.toLocaleString('en-US')} นัดล่าสุด</p>
+        <table><tr><th>ตัวชี้วัด</th><th class="n">เวลาตายตัว</th><th class="n">DYNAMIC</th></tr>
+          <tr><td>คลาดจากเวลาจริงเฉลี่ย (MAE)</td><td class="n">${num(T.fixed.mae, 1)} นาที</td><td class="n">${num(T.model.mae, 1)} นาที</td></tr>
+          <tr><td>นัดที่เลยเวลาจอง</td><td class="n">${pct(T.fixed.overrunPct)}</td><td class="n">${pct(T.model.overrunPct)}</td></tr>
+          <tr><td>นัดที่เลยเกิน 10 นาที (คิวถัดไปต้องรอ)</td><td class="n">${pct(T.fixed.late10Pct)}</td><td class="n">${pct(T.model.late10Pct)}</td></tr>
+          <tr><td>เมื่อเลย เลยเฉลี่ย</td><td class="n">${num(T.fixed.overrunAvg)} นาที</td><td class="n">${num(T.model.overrunAvg)} นาที</td></tr>
+          <tr><td>เมื่อเสร็จก่อน เก้าอี้ว่างเฉลี่ย</td><td class="n">${num(T.fixed.idleAvg)} นาที</td><td class="n">${num(T.model.idleAvg)} นาที</td></tr></table>
+        <p class="note">เวลาตายตัวทำให้ผมสั้นจองเผื่อเกินไป แต่ผมยาวกับงานเคมีเลยเวลาบ่อย ลูกค้าคิวถัดไปต้องรอ (คะแนนเมื่อเลยเวลาเฉลี่ย <b>${num(D.csat.late, 1)}</b> เทียบกับ <b>${num(D.csat.onTime, 1)}</b> เมื่อตรงเวลา)
+          DYNAMIC แลกเก้าอี้ว่างเพิ่มเล็กน้อยกับการแทบไม่ทำให้ลูกค้ารอ ส่วนช่องว่างที่เหลือ ระบบจองแบบยืดหยุ่นจะจัดคิวถัดไปให้ต่อท้ายพอดี</p></div>
+    </div>
+    <div class="card"><h2>เวลาจองแนะนำ · บริการ × ความยาวผม</h2><div style="overflow-x:auto">
+      <table><tr><th>บริการ</th><th>ผม</th><th class="n">เดิม</th><th class="n">ค่ากลางจริง</th><th class="n">P${Math.round(D.pctl * 100)} → จองใหม่</th><th class="n">เปลี่ยน</th><th class="n">เกินเวลาเดิม</th><th class="n">จำนวนนัด</th></tr>
+      ${D.table.map(r => `<tr><td>${esc(r.th)}</td><td>${r.len}</td><td class="n">${r.standard}</td><td class="n">${r.median ?? '–'}</td>
+        <td class="n"><b>${r.recommended}</b>${r.basis !== 'data' ? `<br><small>${r.basis === 'pooled' ? 'ข้อมูลน้อย ใช้รวมทุกความยาว' : 'ข้อมูลน้อย ใช้ค่าเดิม'}</small>` : ''}</td>
+        <td class="n ${flag(r.recommended, r.standard)}">${r.recommended === r.standard ? '0' : sign(r.recommended - r.standard)}</td>
+        <td class="n">${pct(r.overrunPct)}</td><td class="n">${r.n}</td></tr>`).join('')}</table></div>
+      <p class="note">ผม XL ใช้ค่าของผมยาว (L) แล้วให้ช่างประเมินเพิ่มหน้างาน · ถ้าลูกค้าใช้ AI ประเมินผม ระบบจะบวกเวลาที่ AI เผื่อไว้ให้อีก</p></div>
+    <div class="card"><h2>ความเร็วช่าง เทียบค่ากลางของร้าน</h2>
+      ${hbars(D.stylists.filter(s => s.n).map(s => ({ label: `${s.name} · ${s.role}`, v: s.speed, tip: `${s.name}: ${s.n} นัด · ลูกค้ารอเฉลี่ย ${num(s.wait, 1)} นาที` })),
+        v => `${num(v * 100)}%`, r => r.v > 1.03 ? `ช้ากว่า ${num((r.v - 1) * 100)}%` : r.v < 0.97 ? `เร็วกว่า ${num((1 - r.v) * 100)}%` : 'ใกล้ค่ากลาง')}
+      <p class="note">100% = เท่ากับค่ากลางของร้าน · ใช้ดูภาระงานและวางแผนฝึกช่าง (ตอนนี้ระบบยังไม่ปรับเวลาจองตามช่างแต่ละคน)</p></div>
+
+    <div class="sect">2 · No-show และมัดจำตามราคา</div>
+    <p class="note">มัดจำ ${baht(C.shop.deposit)} เท่ากันทุกบริการทำให้งานราคาถูกต้องจ่ายมัดจำเกือบเท่าราคา ส่วนงานหลักพันจ่ายแค่ไม่กี่เปอร์เซ็นต์ ข้อมูลบอกว่า
+      <b>สัดส่วนมัดจำต่อราคา</b>สัมพันธ์กับโอกาสที่ลูกค้าไม่มา และลูกค้าแต่ละกลุ่มเสี่ยงไม่เท่ากัน</p>
+    <div class="grid2">
+      <div class="card"><h2>อัตราไม่มา · ตามสัดส่วนมัดจำต่อราคา</h2>${nsBars(N.byRatio)}
+        <div class="h3" style="margin-top:18px">ตามกลุ่มลูกค้า (ดูจากประวัติก่อนวันจอง)</div>${nsBars(N.bySeg)}</div>
+      <div class="card"><div class="h3">ตามราคาบริการ</div>${nsBars(N.byPrice)}
+        <div class="h3">ตามระยะจองล่วงหน้า</div>${nsBars(N.byLead)}
+        <div class="h3">ตามช่องทาง</div>${nsBars(N.byChannel)}</div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>สูตรมัดจำแบบใหม่</h2>
+        <p class="note" style="margin:0 0 10px">มัดจำ = ราคาบริการ × อัตราของกลุ่มลูกค้า · อัตรา = ${pct(P.base)} × (no-show ของกลุ่ม ÷ no-show เฉลี่ย) ปัดทีละ 5% อยู่ระหว่าง 10–40%
+          · ปัดยอดขึ้นทีละ ฿50 · ขั้นต่ำ ${baht(C.dyn ? C.dyn.minDeposit : 100)} สูงสุด ${baht(C.dyn ? C.dyn.maxDeposit : 1500)}</p>
+        <table><tr><th>กลุ่มลูกค้า</th><th class="n">NO-SHOW</th><th class="n">อัตรามัดจำ</th></tr>
+          ${N.bySeg.map(g => `<tr><td>${esc(g.label)}</td><td class="n">${pct(g.rate, 1)}</td><td class="n"><b>${pct(P.rates[g.k])}</b></td></tr>`).join('')}</table>
+        <div class="h3">ตัวอย่างยอดมัดจำ</div>
+        <table><tr><th class="n">ราคา</th><th class="n">เดิม</th>${Object.keys(P.segments).map(k => `<th class="n">${esc(P.segments[k])}</th>`).join('')}</tr>
+          ${P.examples.map(e => `<tr><td class="n">${baht(e.price)}</td><td class="n">${baht(e.old)}</td>${Object.keys(P.segments).map(k => `<td class="n ${flag(e[k], e.old)}">${baht(e[k])}</td>`).join('')}</tr>`).join('')}</table></div>
+      <div class="card"><h2>ย้อนทดสอบกับนัด LINE ${B.n.toLocaleString('en-US')} นัดที่ผ่านมา</h2>
+        <div class="vs"><div><span>มัดจำ ${baht(C.shop.deposit)} ทุกนัด</span><b>${pct(B.old.nsRate, 1)}</b><span>no-show (เกิดขึ้นจริง)</span></div><span>→</span>
+          <div class="new"><span>มัดจำตามราคา</span><b>${pct(B.new.nsRate, 1)}</b><span>no-show (ประมาณการ)</span></div></div>
+        <table style="margin-top:12px"><tr><th>ต่อเดือน</th><th class="n">เดิม</th><th class="n">แบบใหม่</th></tr>
+          <tr><td>มูลค่านัดที่เสียไปเพราะไม่มา</td><td class="n">${baht(B.old.lost)}</td><td class="n">${baht(B.new.lost)}</td></tr>
+          <tr><td>มัดจำที่ร้านได้ชดเชย</td><td class="n">${baht(B.old.kept)}</td><td class="n">${baht(B.new.kept)}</td></tr>
+          <tr><td>มัดจำเฉลี่ยต่อนัด</td><td class="n">${baht(B.old.avgDep)}</td><td class="n">${baht(B.new.avgDep)}</td></tr></table>
+        <p class="note">มัดจำเฉลี่ยเท่าเดิม แต่ย้ายภาระไปที่งานราคาสูงและลูกค้าที่เคยไม่มา ลูกค้าประจำกับงานราคาถูกจ่ายน้อยลง (${pct(B.cheaperPct)} ของนัดจ่ายน้อยกว่าเดิม)
+          · ตัวเลขแบบใหม่เป็น<b>ประมาณการ</b>จากอัตรา no-show ที่เห็นในแต่ละช่วงสัดส่วนมัดจำ ยังไม่ใช่ผลจากการทดลองจริง ควรเปิดใช้แล้ววัดผลซ้ำหลัง 1–2 เดือน</p></div>
+    </div>`;
+
+  $('hSvc').onchange = e => { histSvc = e.target.value; $('hist').innerHTML = histogram(histSvc, histLen); };
+  $('hLen').onclick = e => { if (!e.target.dataset.l) return; histLen = e.target.dataset.l;
+    $('hLen').querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target)); $('hist').innerHTML = histogram(histSvc, histLen); };
+}
+
+async function loadAna() {
+  $('anaSrc').innerHTML = '<p class="empty">กำลังวิเคราะห์…</p>';
+  const [d, cfg] = await Promise.all([adminApi({ action: 'admin_analytics' }), C ? null : adminApi({ action: 'admin_day', date: ymd(new Date()) })]);
+  if (cfg) C = cfg.config;
+  ana = d;
+  if (!ana.meta) ana.meta = { total: 0, sim: 0, real: 0 };
+  renderAna();
+}
+$('anaReload').onclick = () => loadAna().catch(e => alert(e.message));
+$('anaPrint').onclick = () => window.print();
+
+// tooltip สำหรับกราฟ (data-tip)
+const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; document.body.appendChild(tip);
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t || !t.dataset.tip) { tip.hidden = true; return; }
+  tip.textContent = t.dataset.tip; tip.hidden = false;
+  tip.style.left = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+});
 
 // ---------- boot ----------
 (async () => {

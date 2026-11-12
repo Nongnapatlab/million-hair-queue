@@ -4,6 +4,7 @@
 
 - `docs/index.html` — LIFF app ลูกค้า: จอง 5 ขั้น (บริการ → ช่าง → วัน-เวลา → รายละเอียด → ยืนยัน/มัดจำ), นัดของฉัน (เลื่อน/ยกเลิก/ลงปฏิทิน/จองซ้ำ), ราคา, ช่าง, Lookbook
 - `docs/admin/` — หลังบ้าน: ตารางนัดรายช่าง, เปลี่ยนสถานะ, ตรวจสลิป, เพิ่มนัด Walk-in/โทรจอง, รายงาน + CSV/PDF
+- Analytics (หลังบ้าน) — สร้างข้อมูลจำลอง 120 วัน (แท็บ SimHistory) แล้ววิเคราะห์เวลาทำผมจริงและ no-show → เวลาจองแบบ dynamic (P80 ตามบริการ × ความยาวผม) และมัดจำตามราคา × ความเสี่ยงของกลุ่มลูกค้า กด “นำไปใช้” แล้วระบบจองใช้ค่าใหม่ทันที
 - `apps-script/Code.gs` — backend บน Google Apps Script + Google Sheets (แท็บ Bookings), Flex message, แจ้งเตือนก่อนวันนัด, rich menu
 - `docs/assets/` — โลโก้และรูป rich menu · `richmenu/brand.html` คือไฟล์ต้นฉบับที่ใช้ render
 - `docs/vendor/qrcode-2.0.4.js` — qrcode-generator (MIT, Kazuhiko Arase) สำหรับ QR PromptPay

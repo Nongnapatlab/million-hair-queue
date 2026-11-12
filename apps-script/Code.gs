@@ -59,6 +59,44 @@ const STYLISTS = [
   { id: 'nina', name: 'Nina', role: 'Treatment & styling' },
   { id: 'tee', name: 'Tee', role: 'Cut & color' },
 ];
+// ---------- เวลาทำผม & มัดจำแบบ dynamic (เรียนรู้จากนัดที่ผ่านมา) ----------
+// ยังไม่กด "นำไปใช้" ในหน้า Analytics = ใช้ SERVICES.min และ SHOP.deposit แบบเดิม
+const MODEL_PROP = 'PRICING_MODEL'; // Script Property เก็บโมเดลที่แอดมินกดนำไปใช้ (JSON)
+const SIM_SHEET = 'SimHistory';     // ข้อมูลจำลอง "เปิดร้านมาสักพัก" แยกแท็บ ไม่ปนกับนัดจริง
+const DYN = {
+  pctl: 0.8,       // เวลาที่จอง = P80 ของเวลาทำจริง → 8 ใน 10 นัดเสร็จทันเวลา
+  minSamples: 8,   // ข้อมูลรายความยาวผมน้อยกว่านี้ → ใช้ข้อมูลรวมทุกความยาว → น้อยอีก → เวลามาตรฐาน
+  baseRate: 0.2,   // มัดจำตั้งต้น 20% ของราคา แล้วคูณตามความเสี่ยง no-show ของกลุ่มลูกค้าเทียบค่าเฉลี่ย
+  minRate: 0.1, maxRate: 0.4, minDeposit: 100, maxDeposit: 1500, step: 50,
+};
+const SEGMENTS = { new: 'ลูกค้าใหม่', returning: 'ลูกค้าเก่า', risky: 'เคยไม่มาตามนัด' };
+
+let modelCache_;
+function model_() {
+  if (modelCache_ === undefined) {
+    try { modelCache_ = JSON.parse(PropertiesService.getScriptProperties().getProperty(MODEL_PROP) || 'null'); }
+    catch (err) { modelCache_ = null; }
+  }
+  return modelCache_;
+}
+const lenKey_ = len => (len === 'XL' ? 'L' : ['S', 'M', 'L'].includes(len) ? len : 'M');
+const minOf_ = (svc, len) => (((model_() || {}).minutes || {})[svc.id] || {})[lenKey_(len)] || svc.min;
+
+/** กลุ่มลูกค้าจากประวัติ: เคยไม่มา = risky · เคยมาใช้บริการแล้ว = returning · ยังไม่เคย = new */
+function segmentOf_(uid, rows) {
+  const mine = (rows || rows_()).filter(r => r.v[K.uid] === uid).map(r => r.v[K.status]);
+  return mine.includes(STATUS.NO_SHOW) ? 'risky' : mine.includes(STATUS.DONE) ? 'returning' : 'new';
+}
+
+/** มัดจำ = ราคา × อัตราของกลุ่มลูกค้า ปัดขึ้นทีละ ฿50 · ไม่ต่ำกว่า ฿100 ไม่เกิน ฿1,500 และไม่เกินราคา */
+function depositFor_(price, segment, rates) {
+  const r = rates || (model_() || {}).deposit;
+  if (!r) return { deposit: SHOP.deposit, rate: null, segment };
+  const rate = r[segment] || DYN.baseRate;
+  const raw = Math.ceil(price * rate / DYN.step) * DYN.step;
+  return { deposit: Math.min(price, Math.max(DYN.minDeposit, Math.min(DYN.maxDeposit, raw))), rate, segment };
+}
+
 const CHEMICALS = ['ทำสี', 'บลีช', 'ดัด', 'ยืด', 'เคราติน'];
 const PRONOUNS = ['ไม่ระบุ', 'He', 'She', 'They'];
 
@@ -71,7 +109,7 @@ const DEPOSIT = { UNPAID: 'ยังไม่ชำระ', SLIP: 'แนบส�
 
 // ---------- ข้อความ LINE (น้ำเสียงกลาง ไม่ใช้ ครับ/ค่ะ) · {ชื่อ} {วันที่} {เวลา} {ช่าง} {บริการ} {รหัสจอง} {ลิงก์จอง} ----------
 const MSG = {
-  pending: 'ได้รับคำขอจองแล้ว {ชื่อ}\n\n{วันที่} · {เวลา} น.{ช่วงเวลา}\nช่าง {ช่าง} · {บริการ}\n\nโอนมัดจำ ฿300 ผ่าน PromptPay แล้วแนบสลิปภายใน 30 นาที เพื่อล็อกคิวนี้ไว้\nรหัสจอง {รหัสจอง}',
+  pending: 'ได้รับคำขอจองแล้ว {ชื่อ}\n\n{วันที่} · {เวลา} น.{ช่วงเวลา}\nช่าง {ช่าง} · {บริการ}\n\nโอนมัดจำ ฿{มัดจำ} ผ่าน PromptPay แล้วแนบสลิปภายใน 30 นาที เพื่อล็อกคิวนี้ไว้\nรหัสจอง {รหัสจอง}',
   confirmed: 'จองสำเร็จ ✓ เจอกัน {วันที่} เวลา {เวลา} น.{ช่วงเวลา}\nช่าง {ช่าง} · {บริการ}\nรหัสจอง {รหัสจอง}\n\nเลื่อนนัดได้ฟรีก่อน 24 ชม. ผ่านเมนู MY BOOKING',
   reminderD1: 'พรุ่งนี้เจอกัน {ชื่อ} ✦\n{วันที่} · {เวลา} น. กับ {ช่าง}\n\nถ้ามีรูปทรงที่อยากได้เพิ่ม ส่งมาในแชทนี้ได้เลย ช่างจะได้เตรียมก่อน',
   reminder2h: 'อีก 2 ชั่วโมงถึงคิวของ {ชื่อ} ({เวลา} น.)\nร้านอยู่ซอยสุขุมวิท 49 ใกล้ BTS พร้อมพงษ์\nมาถึงก่อน 5–10 นาทีกำลังดี',
@@ -219,6 +257,7 @@ function doPost(e) {
       case 'points': return json_({ ok: true, ...pointsOf_(uid) });
       case 'redeem': return json_(redeem_(uid, body.reward));
       case 'ai_estimate': return json_(aiEstimate_(uid, body));
+      case 'quote': return json_(quoteFor_(uid, body));
       default:
         if (String(body.action).startsWith('admin_')) return json_(admin_(uid, body));
         return json_({ ok: false, error: 'unknown action' });
@@ -235,7 +274,19 @@ function publicConfig_() {
     chemicals: CHEMICALS, pronouns: PRONOUNS, dates: bookableDates_(),
     ai: Boolean(PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY')),
     promptpay: pp ? promptPayPayload_(pp, SHOP.deposit) : null,
+    model: model_() ? { minutes: model_().minutes, deposit: model_().deposit, appliedAt: model_().appliedAt } : null,
+    dyn: { minDeposit: DYN.minDeposit, maxDeposit: DYN.maxDeposit },
   };
+}
+
+/** ราคา เวลา และมัดจำของลูกค้าคนนี้ (มัดจำขึ้นกับราคาและประวัติการมาตามนัด) + QR ตามยอด */
+function quoteFor_(uid, b) {
+  const len = LENGTHS.some(l => l.code === b.length) ? b.length : 'M';
+  const q = quote_(b.services, len);
+  const d = depositFor_(q.price, segmentOf_(uid));
+  const pp = PropertiesService.getScriptProperties().getProperty('PROMPTPAY_ID');
+  return { ok: true, minutes: q.minutes, price: q.price, ...d, segmentTh: SEGMENTS[d.segment],
+    promptpay: pp ? promptPayPayload_(pp, d.deposit) : null };
 }
 
 // ---------- pricing / time helpers ----------
@@ -269,7 +320,7 @@ function quote_(serviceIds, len) {
   if (!svcs.length) throw new Error('กรุณาเลือกบริการอย่างน้อย 1 อย่าง');
   return {
     svcs,
-    minutes: svcs.reduce((s, x) => s + x.min, 0),
+    minutes: svcs.reduce((s, x) => s + minOf_(x, len), 0),
     price: svcs.reduce((s, x) => s + priceOf_(x, len), 0),
   };
 }
@@ -303,13 +354,17 @@ function bestFit_(busy, ids, win, minutes, earliest) {
   const from = Math.max(win.from, Math.ceil(earliest / SHOP.slotStep) * SHOP.slotStep);
   ids.forEach(id => {
     const ranges = busy[id] || [];
-    for (let t = from; t < win.to && t + minutes <= SHOP.close; t += SHOP.slotStep) {
-      if (!isFree_(ranges, t, t + minutes)) continue;
+    const starts = [];
+    for (let t = from; t < win.to; t += SHOP.slotStep) starts.push(t);
+    // ต่อท้ายนัดเดิมพอดีได้ด้วย (เวลาทำแบบ dynamic เช่น 37 นาที ไม่ลงตัวทีละ 30 นาที)
+    ranges.forEach(([, e]) => { if (e > from && e < win.to && !starts.includes(e)) starts.push(e); });
+    starts.sort((a, b) => a - b).forEach(t => {
+      if (t + minutes > SHOP.close || !isFree_(ranges, t, t + minutes)) return;
       const before = t - Math.max(SHOP.open, ...ranges.filter(([, e]) => e <= t).map(([, e]) => e));
       const after = Math.min(SHOP.close, ...ranges.filter(([s]) => s >= t + minutes).map(([s]) => s)) - (t + minutes);
       const score = [Math.min(before, after, 60), ranges.length, t]; // ช่องว่าง ≥ 60 นาทียังขายได้ ถือว่าเท่ากัน
       if (!best || compare_(score, best.score) < 0) best = { id, start: t, score };
-    }
+    });
   });
   return best;
 }
@@ -366,6 +421,7 @@ function book_(uid, b) {
   if (b.window && !win) throw new Error('ช่วงเวลาไม่ถูกต้อง');
   let start = win ? null : validateSlot_(b.date, b.time, q.minutes);
   if (win) bookableDay_(b.date);
+  const dep = depositFor_(q.price, segmentOf_(uid));
 
   const slipUrl = b.slip ? saveUpload_(b.slip, `slip_${b.date}_${name}`) : '';
   const photoUrls = (b.photos || []).slice(0, 3).map((p, i) => saveUpload_(p, `ref_${b.date}_${name}_${i + 1}`));
@@ -391,7 +447,7 @@ function book_(uid, b) {
       [K.created]: nowStr_(), [K.id]: newId_(b.date), [K.date]: b.date, [K.start]: toHHMM_(start),
       [K.end]: toHHMM_(start + q.minutes), [K.duration]: String(q.minutes), [K.stylist]: stylist.name,
       [K.services]: q.svcs.map(s => s.th).join(' + '), [K.length]: len, [K.price]: String(q.price),
-      [K.deposit]: String(SHOP.deposit), [K.depositStatus]: slipUrl ? DEPOSIT.SLIP : DEPOSIT.UNPAID,
+      [K.deposit]: String(dep.deposit), [K.depositStatus]: slipUrl ? DEPOSIT.SLIP : DEPOSIT.UNPAID,
       [K.status]: STATUS.PENDING, [K.name]: name, [K.phone]: phone,
       [K.pronoun]: PRONOUNS.includes(b.pronoun) ? b.pronoun : 'ไม่ระบุ',
       [K.chem]: (b.chemicals || []).filter(c => CHEMICALS.includes(c)).join(', '),
@@ -772,7 +828,309 @@ function admin_(uid, b) {
       bookings: rows_().filter(r => r.v[K.date] >= b.from && r.v[K.date] <= b.to).map(r => toBooking_(r.v, true)),
     };
   }
+  if (b.action === 'admin_analytics') return { ok: true, ...analyze_(), applied: model_() };
+  if (b.action === 'admin_model_apply') {
+    const a = analyze_();
+    if (a.empty) throw new Error('ยังไม่มีข้อมูลให้วิเคราะห์');
+    const m = { ...a.recommended, appliedAt: nowStr_(), basedOn: { total: a.meta.total, from: a.meta.from, to: a.meta.to, sim: a.meta.sim } };
+    PropertiesService.getScriptProperties().setProperty(MODEL_PROP, JSON.stringify(m));
+    modelCache_ = m;
+    return { ok: true, applied: m };
+  }
+  if (b.action === 'admin_model_reset') {
+    PropertiesService.getScriptProperties().deleteProperty(MODEL_PROP);
+    modelCache_ = null;
+    return { ok: true, applied: null };
+  }
+  if (b.action === 'admin_sim_seed') return { ok: true, rows: seedSim_(clamp_(Math.round(Number(b.days)) || 120, 30, 365)) };
+  if (b.action === 'admin_sim_clear') {
+    const sh = SpreadsheetApp.getActive().getSheetByName(SIM_SHEET);
+    if (sh) SpreadsheetApp.getActive().deleteSheet(sh);
+    return { ok: true };
+  }
   throw new Error('unknown admin action');
+}
+
+// ---------- analytics: เรียนรู้เวลาทำผมจริง + อัตรา no-show → เวลาจองและมัดจำแบบ dynamic ----------
+
+const pctl_ = (xs, p) => {
+  if (!xs.length) return null;
+  const s = xs.slice().sort((a, b) => a - b), i = (s.length - 1) * p, lo = Math.floor(i);
+  return s[lo] + (s[Math.ceil(i)] - s[lo]) * (i - lo);
+};
+const mean_ = xs => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
+const spanMin_ = (a, b) => (tsMs_(b) - tsMs_(a)) / 60000;
+const svcIds_ = str => String(str).split(/\s*\+\s*/).map(th => (SERVICES.find(s => s.th === th) || {}).id).filter(Boolean);
+const clamp_ = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+
+function simRows_() {
+  const sh = SpreadsheetApp.getActive().getSheetByName(SIM_SHEET);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, HEADERS.length).getDisplayValues();
+}
+
+/** เวลาที่ควรจองรายบริการ × ความยาวผม = P80 ของเวลาทำจริง (เฉพาะนัดที่ทำบริการเดียว จะได้รู้ว่าเวลาเป็นของบริการไหน) */
+function learnMinutes_(done) {
+  const minutes = {}, median = {}, table = [];
+  SERVICES.forEach(s => {
+    minutes[s.id] = {};
+    median[s.id] = {};
+    const singles = done.filter(r => r.ids.length === 1 && r.ids[0] === s.id);
+    ['S', 'M', 'L'].forEach(len => {
+      const xs = singles.filter(r => r.len === len).map(r => r.actual);
+      const pool = xs.length >= DYN.minSamples ? xs : singles.map(r => r.actual);
+      const basis = xs.length >= DYN.minSamples ? 'data' : pool.length >= DYN.minSamples ? 'pooled' : 'standard';
+      const rec = basis === 'standard' ? s.min : Math.ceil(pctl_(pool, DYN.pctl));
+      minutes[s.id][len] = rec;
+      median[s.id][len] = basis === 'standard' ? s.min : pctl_(pool, 0.5);
+      table.push({ id: s.id, th: s.th, len, standard: s.min, n: xs.length, basis, recommended: rec,
+        median: xs.length ? Math.round(pctl_(xs, 0.5)) : null, p80: xs.length ? Math.round(pctl_(xs, DYN.pctl)) : null,
+        overrunPct: xs.length ? xs.filter(x => x > s.min).length / xs.length : null });
+    });
+  });
+  return { minutes, median, table };
+}
+
+/** วัดว่าเวลาที่จองไว้แม่นแค่ไหน: เกินเวลา (คิวถัดไปต้องรอ) และเสร็จก่อน (เก้าอี้ว่างเปล่า) */
+function scoreMinutes_(rs, predict) {
+  const e = rs.map(r => r.actual - predict(r));
+  const over = e.filter(x => x > 0), under = e.filter(x => x < 0).map(x => -x);
+  return { n: rs.length, mae: mean_(e.map(Math.abs)) || 0, overrunPct: rs.length ? over.length / rs.length : 0,
+    overrunAvg: mean_(over) || 0, idleAvg: mean_(under) || 0, late10Pct: rs.length ? e.filter(x => x > 10).length / rs.length : 0 };
+}
+
+function analyze_() {
+  const real = rows_().map(r => r.v), sim = simRows_();
+  const today = todayStr_();
+  const recs = real.concat(sim).filter(v => v[K.date] && v[K.date] < today).map(v => ({
+    v, ids: svcIds_(v[K.services]), len: lenKey_(v[K.length]), price: Number(v[K.price]) || 0, dep: Number(v[K.deposit]) || 0,
+    status: v[K.status], ch: v[K.channel], sim: String(v[K.id]).indexOf('SIM-') === 0, key: v[K.uid] || v[K.phone] || v[K.id],
+    stylist: v[K.stylist], rating: Number(v[K.rating]) || 0, booked: Number(v[K.duration]) || 0,
+    lead: v[K.created] ? Math.round((tsMs_(`${v[K.date]} 12:00`) - tsMs_(`${v[K.created].slice(0, 10)} 12:00`)) / 86400000) : 0,
+    actual: v[K.started] && v[K.finished] ? spanMin_(v[K.started], v[K.finished]) : null,
+    wait: v[K.started] && v[K.arrived] ? spanMin_(tsMs_(v[K.arrived]) > startMs_({ date: v[K.date], start: v[K.start] })
+      ? v[K.arrived] : `${v[K.date]} ${v[K.start]}`, v[K.started]) : null,
+  })).sort((a, b) => (a.v[K.date] + a.v[K.start]).localeCompare(b.v[K.date] + b.v[K.start]));
+  if (!recs.length) return { empty: true, meta: { total: 0, sim: 0, real: 0 } };
+
+  // กลุ่มลูกค้า ณ ตอนจอง (ดูจากประวัติก่อนหน้านัดนั้นเท่านั้น ไม่แอบดูอนาคต)
+  const hist = {};
+  recs.forEach(r => {
+    const h = hist[r.key] || (hist[r.key] = { done: 0, ns: 0 });
+    r.seg = h.ns ? 'risky' : h.done ? 'returning' : 'new';
+    if (r.status === STATUS.DONE) h.done++;
+    if (r.status === STATUS.NO_SHOW) h.ns++;
+  });
+  const first = recs[0].v[K.date], last = recs[recs.length - 1].v[K.date];
+  const months = Math.max(1, (tsMs_(`${last} 12:00`) - tsMs_(`${first} 12:00`)) / 86400000 + 1) / 30;
+
+  // ---- เวลาทำผม: train 75% แรกตามเวลา แล้วทดสอบกับ 25% หลังที่โมเดลไม่เคยเห็น ----
+  const done = recs.filter(r => r.status === STATUS.DONE && r.actual > 0 && r.actual < 600 && r.ids.length);
+  const cut = Math.floor(done.length * 0.75);
+  const trained = learnMinutes_(done.slice(0, cut)).minutes;
+  const fixed = r => r.ids.reduce((s, id) => s + SERVICES.find(x => x.id === id).min, 0);
+  const byModel = m => r => r.ids.reduce((s, id) => s + m[id][r.len], 0);
+  const test = done.slice(cut);
+  const learned = learnMinutes_(done);
+  const samples = {};
+  SERVICES.forEach(s => { samples[s.id] = { S: [], M: [], L: [] }; });
+  done.forEach(r => { if (r.ids.length === 1) samples[r.ids[0]][r.len].push(Math.round(r.actual)); });
+  const stylists = STYLISTS.map(st => {
+    const rs = done.filter(r => r.stylist === st.name);
+    return { name: st.name, role: st.role, n: rs.length,
+      speed: rs.length ? mean_(rs.map(r => r.actual / byModel(learned.median)(r))) : null, // 1.1 = ช้ากว่าค่ากลาง 10%
+      wait: mean_(rs.map(r => r.wait).filter(x => x != null)) };
+  });
+  const late = done.filter(r => r.rating && r.actual > fixed(r) + 10), onTime = done.filter(r => r.rating && r.actual <= fixed(r) + 10);
+
+  // ---- no-show: นับเฉพาะนัดที่มีผลแล้ว (เสร็จ/ไม่มา) และไม่ใช่ walk-in ----
+  const out = recs.filter(r => (r.status === STATUS.DONE || r.status === STATUS.NO_SHOW) && r.ch !== 'Walk-in');
+  const nsRate = rs => (rs.length ? rs.filter(r => r.status === STATUS.NO_SHOW).length / rs.length : null);
+  const pAll = nsRate(out) || 0;
+  const group = (fn, defs) => defs.map(([k, label]) => { const rs = out.filter(r => fn(r) === k); return { k, label, n: rs.length, rate: nsRate(rs) }; });
+  const ratioOf = (dep, price) => (!dep ? 'none' : dep / price >= 0.3 ? 'r30' : dep / price >= 0.15 ? 'r15' : dep / price >= 0.08 ? 'r8' : 'r0');
+  const RATIO = [['none', 'ไม่เก็บมัดจำ'], ['r0', 'ต่ำกว่า 8% ของราคา'], ['r8', '8–15%'], ['r15', '15–30%'], ['r30', '30% ขึ้นไป']];
+  const byRatio = group(r => ratioOf(r.dep, r.price), RATIO);
+  const bySeg = group(r => r.seg, Object.keys(SEGMENTS).map(k => [k, SEGMENTS[k]]));
+  const byLead = group(r => (r.lead <= 0 ? 'd0' : r.lead <= 2 ? 'd1' : r.lead <= 6 ? 'd3' : 'd7'),
+    [['d0', 'จองวันเดียวกัน'], ['d1', 'ล่วงหน้า 1–2 วัน'], ['d3', 'ล่วงหน้า 3–6 วัน'], ['d7', 'ล่วงหน้า 7 วันขึ้นไป']]);
+  const byPrice = group(r => (r.price < 1000 ? 'p0' : r.price < 3000 ? 'p1' : 'p3'),
+    [['p0', 'ต่ำกว่า ฿1,000'], ['p1', '฿1,000–2,999'], ['p3', '฿3,000 ขึ้นไป']]);
+  const byChannel = group(r => r.ch, [['LINE', 'LINE (มัดจำ)'], ['โทรจอง', 'โทรจอง (ไม่มีมัดจำ)']]);
+
+  // อัตรามัดจำรายกลุ่ม = 20% × (no-show ของกลุ่ม ÷ no-show เฉลี่ย) ปัดทีละ 5% · ข้อมูลกลุ่มน้อยกว่า 20 นัด ใช้ 20%
+  const rates = {};
+  bySeg.forEach(g => {
+    rates[g.k] = g.n >= 20 && pAll ? clamp_(Math.round(DYN.baseRate * g.rate / pAll * 20) / 20, DYN.minRate, DYN.maxRate) : DYN.baseRate;
+  });
+
+  // ---- ย้อนทดสอบกับนัด LINE ที่ผ่านมา: ถ้าใช้มัดจำแบบใหม่ จะเป็นอย่างไร (ประมาณจากอัตรา no-show ตามสัดส่วนมัดจำที่เห็นจริง) ----
+  const ratioRate = {};
+  byRatio.forEach(g => { ratioRate[g.k] = g.n >= 15 ? g.rate : pAll; });
+  const segRel = {};
+  bySeg.forEach(g => { segRel[g.k] = g.n >= 20 && pAll ? g.rate / pAll : 1; });
+  const lineOut = out.filter(r => r.ch === 'LINE');
+  let oldNs = 0, oldLost = 0, oldKept = 0, oldP = 0, newNs = 0, newLost = 0, newKept = 0, oldDep = 0, newDep = 0, cheaper = 0;
+  lineOut.forEach(r => {
+    const d = depositFor_(r.price, r.seg, rates).deposit;
+    const isNs = r.status === STATUS.NO_SHOW;
+    // โอกาสไม่มา = อัตราจริงของถังสัดส่วนมัดจำ × ความเสี่ยงของกลุ่มลูกค้า (คิดทั้งแบบเดิมและแบบใหม่ด้วยสูตรเดียวกัน)
+    const p = clamp_(ratioRate[ratioOf(d, r.price)] * segRel[r.seg], 0, 1);
+    oldP += clamp_(ratioRate[ratioOf(r.dep, r.price)] * segRel[r.seg], 0, 1);
+    oldNs += isNs ? 1 : 0; oldLost += isNs ? r.price : 0; oldKept += isNs ? r.dep : 0;
+    newNs += p; newLost += p * r.price; newKept += p * d;
+    oldDep += r.dep; newDep += d; cheaper += d < r.dep ? 1 : 0;
+  });
+  // ปรับสเกลให้แบบเดิมตรงกับที่เกิดขึ้นจริง แล้วใช้สเกลเดียวกันกับแบบใหม่ (เทียบแบบ apples-to-apples)
+  const fit = oldP ? oldNs / oldP : 1;
+  newNs *= fit; newLost *= fit; newKept *= fit;
+  const perMonth = x => x / months;
+  const examples = [350, 500, 800, 1200, 1800, 2500, 3500, 4500, 5000].map(price => ({
+    price, old: SHOP.deposit, ...Object.keys(SEGMENTS).reduce((o, k) => { o[k] = depositFor_(price, k, rates).deposit; return o; }, {}),
+  }));
+
+  return {
+    meta: { total: recs.length, sim: recs.filter(r => r.sim).length, real: recs.filter(r => !r.sim).length,
+      from: first, to: last, months, done: done.length, outcomes: out.length },
+    duration: {
+      pctl: DYN.pctl, table: learned.table, samples, stylists,
+      test: { n: test.length, trainN: cut, fixed: scoreMinutes_(test, fixed), model: scoreMinutes_(test, byModel(trained)) },
+      csat: { onTime: mean_(onTime.map(r => r.rating)), onTimeN: onTime.length, late: mean_(late.map(r => r.rating)), lateN: late.length },
+      wait: mean_(done.map(r => r.wait).filter(x => x != null)),
+    },
+    noShow: {
+      rate: pAll, byRatio, bySeg, byLead, byPrice, byChannel,
+      lostPerMonth: perMonth(out.filter(r => r.status === STATUS.NO_SHOW).reduce((s, r) => s + r.price, 0)),
+    },
+    deposit: {
+      rates, base: DYN.baseRate, examples, segments: SEGMENTS,
+      backtest: { n: lineOut.length, months,
+        old: { nsRate: lineOut.length ? oldNs / lineOut.length : 0, lost: perMonth(oldLost), kept: perMonth(oldKept), avgDep: lineOut.length ? oldDep / lineOut.length : 0 },
+        new: { nsRate: lineOut.length ? newNs / lineOut.length : 0, lost: perMonth(newLost), kept: perMonth(newKept), avgDep: lineOut.length ? newDep / lineOut.length : 0 },
+        cheaperPct: lineOut.length ? cheaper / lineOut.length : 0 },
+    },
+    recommended: { minutes: learned.minutes, deposit: rates },
+  };
+}
+
+// ---------- ข้อมูลจำลอง: ร้านเปิดมาแล้วหลายเดือน ----------
+// "ความจริง" ที่ร้านไม่รู้ล่วงหน้า — analytics ต้องหาค่าพวกนี้ให้เจอจากข้อมูลเอง
+const SIM_TRUTH = { // เวลาทำจริงเฉลี่ย (นาที) ผม S / M / L
+  cut: [34, 40, 49], wash: [24, 30, 38], color: [98, 128, 158], bleach: [150, 190, 235], perm: [125, 150, 182],
+  straight: [150, 185, 228], treat: [32, 40, 50], beard: [16, 17, 17], ext: [190, 205, 230],
+};
+const SIM_SPEED = { Max: 0.9, Ploy: 1, Ken: 1.05, Nina: 0.97, Tee: 1.12 }; // ช่างแต่ละคนเร็ว/ช้ากว่าค่าเฉลี่ย
+const SIM_MENU = [[['cut'], 30], [['cut', 'wash'], 10], [['wash'], 8], [['color'], 9], [['cut', 'color'], 7], [['bleach'], 5],
+  [['bleach', 'treat'], 3], [['perm'], 5], [['straight'], 4], [['treat'], 7], [['cut', 'treat'], 5], [['beard'], 3], [['cut', 'beard'], 4], [['ext'], 1]];
+const SIM_NAMES = ['มายด์', 'ฟ้า', 'บีม', 'แพรว', 'ต้น', 'ปอ', 'มิ้นท์', 'กันต์', 'แนน', 'โอ๊ต', 'ใบเตย', 'ภูมิ', 'จูน', 'เบนซ์', 'ข้าวหอม',
+  'ไอซ์', 'นัท', 'ฝน', 'อาร์ม', 'เฟิร์น', 'ปั้น', 'กิ๊ฟ', 'ตาล', 'โฟกัส', 'น้ำ'];
+
+/** สุ่มแบบกำหนด seed (mulberry32) → สร้างซ้ำได้ผลเดิมทุกครั้ง */
+function rng_(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), a | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Run เองใน Apps Script ได้: สร้างข้อมูลจำลอง 120 วันย้อนหลังลงแท็บ SimHistory */
+function seedSimHistory() { console.log('rows:', seedSim_(120)); }
+
+function seedSim_(days) {
+  const rnd = rng_(20261113);
+  const pick = list => {
+    let x = rnd() * list.reduce((s, it) => s + it[1], 0);
+    for (let i = 0; i < list.length; i++) { x -= list[i][1]; if (x <= 0) return list[i][0]; }
+    return list[list.length - 1][0];
+  };
+  const normal = () => Math.sqrt(-2 * Math.log(1 - rnd())) * Math.cos(2 * Math.PI * rnd());
+  const customers = Array.from({ length: 420 }, (_, i) => ({
+    uid: `SIM-U${String(i + 1).padStart(3, '0')}`, name: SIM_NAMES[i % SIM_NAMES.length],
+    phone: '0890' + String(i + 1).padStart(6, '0'), len: pick([['S', 2], ['M', 3], ['L', 3], ['XL', 1]]),
+    weight: rnd() < 0.25 ? 5 : 1, flaky: rnd() < 0.12, done: 0, noShow: 0, visits: 0,
+  }));
+  const pool = customers.map(c => [c, c.weight]);
+  const stamp = (ymd, min) => `${ymd} ${toHHMM_(Math.round(min))}:00`;
+  const rows = [];
+
+  for (let i = days; i >= 1; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const date = Utilities.formatDate(d, TZ, 'yyyy-MM-dd');
+    const dow = Number(Utilities.formatDate(d, TZ, 'u')) % 7;
+    if (SHOP.closedDays.includes(dow)) continue;
+    const weekend = dow === 0 || dow === 6;
+    STYLISTS.forEach(st => {
+      let t = SHOP.open + SHOP.slotStep * Math.floor(rnd() * (weekend ? 2 : 4));
+      let free = 0; // เวลาที่ช่างว่างจริง (นัดก่อนหน้าอาจเกินเวลา)
+      for (;;) {
+        const ids = pick(SIM_MENU), c = pick(pool);
+        const svcs = ids.map(id => SERVICES.find(s => s.id === id));
+        const booked = svcs.reduce((s, x) => s + x.min, 0); // นโยบายเดิม: เวลามาตรฐานตายตัว
+        if (t + booked > SHOP.close) break;
+        const price = svcs.reduce((s, x) => s + priceOf_(x, c.len), 0);
+        const channel = pick([['LINE', 72], ['โทรจอง', 14], ['Walk-in', 14]]);
+        const lead = channel === 'Walk-in' ? 0 : pick([[0, 12], [1, 22], [2, 16], [3, 12], [5, 14], [7, 12], [10, 7], [14, 5]]);
+        const deposit = channel === 'LINE' ? SHOP.deposit : 0; // นโยบายเดิม: มัดจำ ฿300 เท่ากันทุกบริการ
+        const seg = c.noShow ? 'risky' : c.done ? 'returning' : 'new';
+        const ratio = deposit / price;
+        let p = { new: 0.15, returning: 0.06, risky: 0.22 }[seg] * (c.flaky ? 1.8 : 1);
+        p *= !deposit ? 1.7 : ratio >= 0.3 ? 0.45 : ratio >= 0.15 ? 0.7 : ratio >= 0.08 ? 1 : 1.35;
+        p *= lead >= 7 ? 1.3 : lead === 0 ? 0.6 : 1;
+        if (channel === 'Walk-in') p = 0;
+        const cancelled = channel !== 'Walk-in' && rnd() < 0.07;
+        const noShow = !cancelled && rnd() < p;
+
+        const createdDay = Utilities.formatDate(new Date(d.getTime() - lead * 86400000), TZ, 'yyyy-MM-dd');
+        const created = lead ? stamp(createdDay, 8 * 60 + rnd() * 14 * 60) : stamp(date, Math.max(8 * 60, t - 60 - rnd() * 120));
+        const v = new Array(HEADERS.length).fill('');
+        Object.assign(v, {
+          [K.created]: created, [K.id]: `SIM-${date.slice(5, 7)}${date.slice(8, 10)}-${String(rows.length + 1).padStart(4, '0')}`,
+          [K.date]: date, [K.start]: toHHMM_(t), [K.end]: toHHMM_(t + booked), [K.duration]: String(booked), [K.stylist]: st.name,
+          [K.services]: svcs.map(s => s.th).join(' + '), [K.length]: c.len, [K.price]: String(price), [K.deposit]: String(deposit),
+          [K.depositStatus]: deposit ? DEPOSIT.PAID : DEPOSIT.NONE, [K.name]: c.name, [K.phone]: c.phone, [K.pronoun]: 'ไม่ระบุ',
+          [K.uid]: c.uid, [K.visit]: String(c.visits + 1), [K.channel]: channel, [K.note]: 'ข้อมูลจำลอง',
+        });
+        if (cancelled) {
+          Object.assign(v, { [K.status]: STATUS.CANCELLED, [K.cancelled]: stamp(createdDay, 21 * 60) });
+        } else if (noShow) {
+          v[K.status] = STATUS.NO_SHOW;
+          c.noShow++;
+        } else {
+          const li = { S: 0, M: 1, L: 2, XL: 2 }[c.len];
+          const truth = ids.reduce((s, id) => s + SIM_TRUTH[id][li], 0) * (c.len === 'XL' ? 1.15 : 1) * (ids.length > 1 ? 0.95 : 1);
+          const actual = Math.max(10, Math.round(truth * SIM_SPEED[st.name] * Math.exp(0.13 * normal())));
+          const arrive = t + Math.round(normal() * 6 + 2);
+          const started = Math.max(t, arrive, free);
+          free = started + actual;
+          const waited = started - Math.max(t, arrive);
+          let rating = 0;
+          if (rnd() < 0.55) {
+            rating = pick([[5, 6], [4, 3], [3, 1]]);
+            if ((waited > 10 || actual > booked + 10) && rnd() < 0.6) rating = Math.max(1, rating - 1 - (rnd() < 0.3 ? 1 : 0));
+          }
+          Object.assign(v, { [K.status]: STATUS.DONE, [K.arrived]: stamp(date, arrive), [K.started]: stamp(date, started),
+            [K.finished]: stamp(date, started + actual), [K.confirmedAt]: created, [K.rating]: rating ? String(rating) : '' });
+          c.done++;
+        }
+        if (!cancelled) c.visits++;
+        rows.push(v);
+        t += booked + pick([[0, 45], [30, 30], [60, 15], [90, 10]]);
+      }
+    });
+  }
+
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SIM_SHEET) || ss.insertSheet(SIM_SHEET);
+  sh.clear();
+  if (sh.getMaxColumns() < HEADERS.length) sh.insertColumnsAfter(sh.getMaxColumns(), HEADERS.length - sh.getMaxColumns());
+  if (sh.getMaxRows() < rows.length + 1) sh.insertRowsAfter(sh.getMaxRows(), rows.length + 1 - sh.getMaxRows());
+  sh.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight('bold').setBackground('#1E2B3C').setFontColor('#F6F6F4');
+  sh.setFrozenRows(1);
+  if (rows.length) sh.getRange(2, 1, rows.length, HEADERS.length).setNumberFormat('@').setValues(rows);
+  return rows.length;
 }
 
 // ---------- AI (Gemini free tier) ----------
@@ -820,7 +1178,7 @@ function aiEstimate_(uid, b) {
 
 length: S = สั้นถึงคาง · M = ประบ่า · L = ยาวเลยบ่า ถึงกลางหลัง · XL = ยาวเกินกลางหลังหรือหนามาก
 services: เลือกเฉพาะ id จากรายการนี้ และเลือกเท่าที่จำเป็นเพื่อให้ได้ทรงที่ต้องการ
-${SERVICES.map(s => `${s.id} = ${s.th} (มาตรฐาน ${s.min} นาที)`).join('\n')}
+${SERVICES.map(s => `${s.id} = ${s.th} (ปกติ ${minOf_(s, 'M')} นาที)`).join('\n')}
 extraMinutes: เวลาที่ควรเผื่อเพิ่มจากเวลามาตรฐาน เพราะผมหนา ยาว หรือเสีย (0–90 ทวีคูณ 15)
 reason: ภาษาไทย 1–2 ประโยค อธิบายสภาพผมและเหตุผลที่เลือก ไม่ต้องพูดถึงราคา
 ถ้ารูปที่ 1 มองไม่เห็นผมชัด ให้ isHair = false`;
@@ -892,7 +1250,8 @@ looksEdited = true ถ้ามีร่องรอยการแก้ไข�
   const ref = String(x.ref || '').replace(/\s/g, '');
   if (!x.isSlip) reasons.push('รูปนี้ไม่ใช่สลิปโอนเงิน');
   else {
-    if (!(Number(x.amount) >= SHOP.deposit)) reasons.push(`ยอดโอน ฿${Number(x.amount) || 0} ไม่ถึงมัดจำ ฿${SHOP.deposit}`);
+    const need = Number(r.v[K.deposit]) || SHOP.deposit;
+    if (!(Number(x.amount) >= need)) reasons.push(`ยอดโอน ฿${Number(x.amount) || 0} ไม่ถึงมัดจำ ฿${need}`);
     let date = String(x.date || '');
     if (/^\d{4}-/.test(date) && Number(date.slice(0, 4)) > 2400) date = (Number(date.slice(0, 4)) - 543) + date.slice(4);
     const paid = /^\d{4}-\d{2}-\d{2}$/.test(date) && /^\d{1,2}:\d{2}$/.test(x.time) ? tsMs_(`${date} ${x.time.padStart(5, '0')}`) : NaN;
@@ -951,9 +1310,9 @@ function taskRow_(id) {
 
 function fill_(tpl, b) {
   const map = { 'ชื่อ': b.name, 'วันที่': thaiDate_(b.date), 'เวลา': b.start, 'ช่าง': b.stylist,
-    'บริการ': b.services, 'รหัสจอง': b.id, 'ลิงก์จอง': LIFF_URL,
+    'บริการ': b.services, 'รหัสจอง': b.id, 'ลิงก์จอง': LIFF_URL, 'มัดจำ': Number(b.deposit).toLocaleString('en-US'),
     'ช่วงเวลา': b.window ? `\nระบบจัดเวลาให้ใน${(SHOP.windows.find(w => w.id === b.window) || {}).th}ที่เลือก ให้ช่างว่างพอดีไม่ต้องรอ` : '' };
-  return tpl.replace(/\{(ชื่อ|วันที่|เวลา|ช่าง|บริการ|รหัสจอง|ลิงก์จอง|ช่วงเวลา)\}/g, (_, k) => map[k] || '');
+  return tpl.replace(/\{(ชื่อ|วันที่|เวลา|ช่าง|บริการ|รหัสจอง|ลิงก์จอง|ช่วงเวลา|มัดจำ)\}/g, (_, k) => map[k] || '');
 }
 
 /** ข้อความสั้นแบบการ์ด: ข้อความตามเทมเพลต + ปุ่มลิงก์ (altText = ข้อความเดียวกัน) */

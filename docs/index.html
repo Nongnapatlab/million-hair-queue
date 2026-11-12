@@ -243,11 +243,15 @@ async function api(payload) {
 const svcById = id => C.services.find(s => s.id === id);
 const priceOf = (s, len) => s.prices[len === 'XL' ? 'L' : (s.prices[len] ? len : 'M')];
 const priceTag = (s, len) => baht(priceOf(s, len)) + (s.from || len === 'XL' ? '+' : '');
+// เวลาทำ: ใช้ค่าที่ร้านเรียนรู้จากข้อมูลจริง (ตามบริการ × ความยาวผม) ถ้ายังไม่มี ใช้เวลามาตรฐาน
+const lenKey = len => len === 'XL' ? 'L' : ['S', 'M', 'L'].includes(len) ? len : 'M';
+const minOf = (s, len) => ((C.model && C.model.minutes[s.id]) || {})[lenKey(len)] || s.min;
+const minRange = s => { const a = minOf(s, 'S'), b = minOf(s, 'L'); return a === b ? `${a}` : `${Math.min(a, b)}–${Math.max(a, b)}`; };
 const splitSvc = str => String(str).split(/\s*[+,]\s*/).filter(Boolean);
 const quote = () => {
   const svcs = draft.services.map(svcById);
   const extra = draft.ai ? draft.ai.extraMinutes : 0;
-  return { svcs, extra, minutes: svcs.reduce((a, s) => a + s.min, 0) + extra, price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
+  return { svcs, extra, minutes: svcs.reduce((a, s) => a + minOf(s, draft.length), 0) + extra, price: svcs.reduce((a, s) => a + priceOf(s, draft.length), 0) };
 };
 const winOf = id => (C.shop.windows || []).find(w => w.id === id);
 const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
@@ -294,7 +298,7 @@ function stepService() {
       <span class="len" style="height:${10 + i * 7}px"></span><span>${l.th}<small>${l.code}</small></span></button>`).join('')}</div>
     ${(C.lengths.find(l => l.code === draft.length) || {}).note ? `<p class="lead" style="margin:10px 0 0">${esc(C.lengths.find(l => l.code === draft.length).note)}</p>` : ''}
     <div style="margin-top:8px">${C.services.map(s => `<button class="svc ${draft.services.includes(s.id) ? 'on' : ''}" data-svc="${s.id}">
-      <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${s.min} MIN</small></span>
+      <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${minOf(s, draft.length)} MIN</small></span>
       <span class="price">${priceTag(s, draft.length)}</span></button>`).join('')}</div>`;
   bindAiBox();
   $('view').querySelectorAll('[data-len]').forEach(b => b.onclick = () => { draft.length = b.dataset.len; stepService(); });
@@ -467,9 +471,19 @@ function stepDetails() {
 function stepReview() {
   const q = quote();
   const r = draft.reschedule;
+  // มัดจำคิดที่ร้าน (ขึ้นกับราคาและประวัติการมาตามนัด) → ขอยอดและ QR ตามยอดจริง
+  const qKey = `${draft.services.join(',')}|${draft.length}`;
+  if (!r && (!draft.dq || draft.dq.key !== qKey)) {
+    draft.dq = null;
+    api({ action: 'quote', services: draft.services, length: draft.length })
+      .catch(() => ({ deposit: C.shop.deposit, promptpay: C.promptpay, rate: null }))
+      .then(d => { if (draft.dq || page !== 'book' || step !== 5 || draft.reschedule || `${draft.services.join(',')}|${draft.length}` !== qKey) return; draft.dq = { ...d, key: qKey }; stepReview(); });
+  }
+  const dq = draft.dq;
   const services = r ? `<div class="line"><span>${esc(r.services)}</span><span>${baht(r.price)}</span></div>`
     : q.svcs.map(s => `<div class="line"><span>${esc(s.th)} · <span style="color:var(--muted)">${esc(s.en.toLowerCase())}</span></span><span>${priceTag(s, draft.length)}</span></div>`).join('');
-  const qrHtml = C.promptpay ? qrSvg(C.promptpay) : '<div class="hatch" style="width:100%;height:100%;display:grid;place-items:center">PROMPTPAY QR<br>· DEMO ·</div>';
+  const qrHtml = !dq ? '<div class="loading" style="width:100%;height:100%;display:grid;place-items:center">…</div>'
+    : dq.promptpay ? qrSvg(dq.promptpay) : '<div class="hatch" style="width:100%;height:100%;display:grid;place-items:center">PROMPTPAY QR<br>· DEMO ·</div>';
   $('view').innerHTML = `${header(5, 'REVIEW')}
     <h1>${r ? 'ยืนยันการเลื่อนนัด' : 'เช็กก่อนยืนยัน'}</h1>
     <div class="sum frame" style="margin-top:14px">
@@ -485,9 +499,10 @@ function stepReview() {
     </div>
     ${r ? '<p class="lead" style="margin-top:14px">มัดจำเดิมยังใช้ได้ เลื่อนนัดฟรีเมื่อเลื่อนก่อนเวลานัดเกิน 24 ชม.</p>' : `
     <div class="deposit">
-      <div class="head"><b>DEPOSIT · มัดจำ</b><big>${baht(C.shop.deposit)}</big></div>
+      <div class="head"><b>DEPOSIT · มัดจำ</b><big>${dq ? baht(dq.deposit) : '…'}</big></div>
+      ${dq && dq.rate ? `<p style="font-size:11.5px;color:#9DB7D5;margin:6px 0 0">มัดจำคิดตามราคาบริการ · ประมาณ ${Math.round(dq.rate * 100)}% ของราคา (${esc(dq.segmentTh)})</p>` : ''}
       <div class="body"><div class="qr">${qrHtml}</div>
-        <div>${C.promptpay ? 'สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป' : '<b style="color:#fff">โหมดสาธิต ไม่ต้องโอนจริง</b><br>ร้านจริงจะให้สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป'}
+        <div>${dq && dq.promptpay ? 'สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป' : '<b style="color:#fff">โหมดสาธิต ไม่ต้องโอนจริง</b><br>ร้านจริงจะให้สแกนจ่ายผ่าน PromptPay แล้วแนบสลิป'}
           · หักออกจากค่าบริการวันจริง · เลื่อนนัดฟรีก่อน 24 ชม.</div></div>
       <button class="slip" id="slipBtn">${draft.slip ? '✓ แนบสลิปแล้ว (แตะเพื่อเปลี่ยน)' : '⇪ แนบสลิปโอน / Upload slip'}</button>
       ${C.ai ? '<p style="font-size:11.5px;color:#9DB7D5;margin:8px 0 0">✦ AI ตรวจสลิปให้ทันที ผ่านแล้วยืนยันคิวอัตโนมัติ ไม่ต้องรอร้าน</p>' : ''}
@@ -713,7 +728,7 @@ function renderPrice() {
   $('view').innerHTML = `<span class="label">PRICE LIST</span><h1>ราคาบริการ</h1>
     <p class="lead">ราคาเริ่มต้นตามความยาวผม (S สั้น · M ประบ่า · L ยาว) ไม่แบ่งราคาตามเพศ</p>
     <table class="ptable"><tr><th>SERVICE</th>${cols.map(c => `<th>${c}</th>`).join('')}</tr>
-      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${s.min} MIN</small></td>${s.prices.S === s.prices.L
+      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${minRange(s)} MIN</small></td>${s.prices.S === s.prices.L
         ? `<td colspan="3">${s.prices.S.toLocaleString('en-US')}${s.from ? '+' : ''}</td>`
         : cols.map(c => `<td>${s.prices[c].toLocaleString('en-US')}</td>`).join('')}</tr>`).join('')}</table>
     <p class="lead" style="margin-top:14px">ผมยาวพิเศษหรือหนามาก (XL) ช่างจะประเมินให้ก่อนเริ่มงาน · ราคาเป็นบาท</p>`;
@@ -739,7 +754,7 @@ function renderAbout() {
       <div><span class="label">Hours</span><br>${esc(C.shop.hours)}</div>
       <div><span class="label">Address</span><br>${esc(C.shop.address)}</div>
       <div><span class="label">Phone</span><br>${esc(C.shop.phone)}</div>
-      <div><span class="label">Deposit & Cancel</span><br>มัดจำ ${baht(C.shop.deposit)} หักจากค่าบริการวันจริง · แนบสลิปภายใน ${C.shop.holdMin} นาทีหลังจอง · เลื่อนนัดฟรีก่อน 24 ชม. · ยกเลิกก่อน 24 ชม. คืนมัดจำภายใน 3 วันทำการ</div>
+      <div><span class="label">Deposit & Cancel</span><br>${C.model ? `มัดจำตามราคาบริการ (${baht(C.dyn.minDeposit)}–${baht(C.dyn.maxDeposit)}) ลูกค้าที่มาตามนัดสม่ำเสมอจ่ายมัดจำน้อยลง` : `มัดจำ ${baht(C.shop.deposit)}`} หักจากค่าบริการวันจริง · แนบสลิปภายใน ${C.shop.holdMin} นาทีหลังจอง · เลื่อนนัดฟรีก่อน 24 ชม. · ยกเลิกก่อน 24 ชม. คืนมัดจำภายใน 3 วันทำการ</div>
       <div><span class="label">Privacy</span><br>ข้อมูลใช้เพื่อจัดการนัดหมายเท่านั้น ไม่เปิดเผยต่อบุคคลอื่น</div>
     </div>
     <button class="cta frame wide" id="mapBtn" style="width:100%;margin-top:16px;background:var(--navy)">เปิดแผนที่<small>MAP</small></button>
