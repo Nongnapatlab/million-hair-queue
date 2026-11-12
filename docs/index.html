@@ -64,6 +64,7 @@
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .sty { border: 1px solid var(--line); background: var(--card); text-align: left; }
   .sty .pic { aspect-ratio: 1 / .78; display: grid; place-items: center; font: 500 10px var(--mono); color: var(--muted); letter-spacing: 2px; }
+  .sty .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .sty .meta { padding: 10px 12px 12px; position: relative; }
   .sty b { font: 700 19px var(--en); letter-spacing: .5px; }
   .sty small { display: block; color: var(--muted); font-size: 12px; }
@@ -256,6 +257,7 @@ const quote = () => {
 const winOf = id => (C.shop.windows || []).find(w => w.id === id);
 const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const winRange = w => `${hhmm(w.from)}–${hhmm(w.to)}`;
+const portrait = s => `<div class="pic"><img src="assets/stylists/${s.id}.svg" alt="ภาพประกอบช่าง ${esc(s.name)}" loading="lazy"></div>`;
 const stylistName = id => id === 'any' ? 'ใครก็ได้' : (C.stylists.find(s => s.id === id) || {}).name;
 
 // ---------- rendering helpers ----------
@@ -372,7 +374,7 @@ function stepStylist() {
     <h1>เลือกช่างของคุณ</h1>
     <p class="lead">ไม่มีช่างประจำ? เลือก Any แล้วระบบจะจัดช่างที่ว่างในเวลาที่คุณเลือกให้</p>
     <div class="grid2">${all.map(s => `<button class="sty frame ${draft.stylist === s.id ? 'on' : ''}" data-sty="${s.id}">
-      <div class="pic hatch">${s.id === 'any' ? '+ ANY' : 'PORTRAIT'}</div>
+      ${s.id === 'any' ? '<div class="pic hatch">+ ANY</div>' : portrait(s)}
       <div class="meta"><b>${esc(s.name)}</b><small>${esc(s.role)}</small></div></button>`).join('')}</div>`;
   $('view').querySelectorAll('[data-sty]').forEach(b => b.onclick = () => { draft.stylist = b.dataset.sty; draft.time = null; stepStylist(); });
   foot('', ctaLabel(`เลือก ${esc(stylistName(draft.stylist))}`, 'NEXT'), () => go('book', 3));
@@ -736,7 +738,7 @@ function renderPrice() {
 }
 function renderStylists() {
   $('view').innerHTML = `<span class="label">OUR TEAM</span><h1>ช่างของเรา</h1><p class="lead">เลือกช่างที่ใช่ หรือเลือก Any ตอนจองเพื่อให้ร้านจัดช่างที่ว่างให้</p>
-    <div class="grid2">${C.stylists.map(s => `<button class="sty frame" data-sty="${s.id}"><div class="pic hatch">PORTRAIT</div>
+    <div class="grid2">${C.stylists.map(s => `<button class="sty frame" data-sty="${s.id}">${portrait(s)}
       <div class="meta"><b>${esc(s.name)}</b><small>${esc(s.role)}</small></div></button>`).join('')}</div>`;
   $('view').querySelectorAll('[data-sty]').forEach(b => b.onclick = () => { draft.stylist = b.dataset.sty; go('book', 1); });
   foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
