@@ -161,6 +161,7 @@
   .h3 { font: 600 12px var(--th); color: var(--muted); margin: 18px 0 8px; }
   [data-page=ana] th { font: 600 11.5px var(--th); letter-spacing: 0; }
   .h3:first-child { margin-top: 0; }
+  .ins { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.6; }
   .sect { font: 700 20px var(--th); margin: 26px 0 4px; }
   .sect + .note { margin: 0 0 14px; }
   @media (max-width: 900px) {
@@ -757,6 +758,50 @@ function histogram(id, len) {
     <span>${xs.length} นัด · ค่ากลาง ${row.median} นาที · นาที (แกนนอน)</span></div>`;
 }
 
+/** สรุปผลเป็นภาษาคน: สร้างจากตัวเลขในข้อมูลทุกครั้ง (ข้อมูลเปลี่ยน ข้อความเปลี่ยนตาม) */
+function insights() {
+  const D = ana.duration, N = ana.noShow, B = ana.deposit.backtest, T = D.test, R = ana.deposit.rates;
+  const find = [], act = [];
+  const rows = D.table.filter(r => r.basis === 'data' && r.n >= 15);
+  const over = rows.slice().sort((a, b) => (b.median - b.standard) - (a.median - a.standard))[0];
+  const under = rows.slice().sort((a, b) => (a.median - a.standard) - (b.median - b.standard))[0];
+  if (over && over.median > over.standard) find.push(`<b>${esc(over.th)} ผม${LEN_TH[over.len]}</b> ใช้เวลาจริงประมาณ ${over.median} นาที แต่ระบบเดิมจองไว้ ${over.standard} นาที
+    เกินเวลาใน ${pct(over.overrunPct)} ของนัด ทำให้ลูกค้าคิวถัดไปต้องรอ`);
+  if (under && under.median < under.standard) find.push(`<b>${esc(under.th)} ผม${LEN_TH[under.len]}</b> เสร็จจริงประมาณ ${under.median} นาที แต่จองไว้ ${under.standard} นาที
+    เก้าอี้ว่างเปล่าราว ${under.standard - under.median} นาทีทุกนัด`);
+  if (T.n) find.push(`เวลาจองแบบ dynamic ลดนัดที่เกินเวลาเกิน 10 นาทีจาก <b>${pct(T.fixed.late10Pct)} เหลือ ${pct(T.model.late10Pct)}</b>
+    (ทดสอบกับ ${T.n.toLocaleString('en-US')} นัดที่โมเดลไม่เคยเห็น)`);
+  if (D.csat.onTime && D.csat.late) find.push(`นัดที่เกินเวลาได้คะแนนความพึงพอใจ <b>${num(D.csat.late, 1)}</b> เทียบกับ <b>${num(D.csat.onTime, 1)}</b>
+    เมื่อเสร็จตามเวลา การเกินเวลาจึงกระทบประสบการณ์ลูกค้าโดยตรง`);
+  const ratio = N.byRatio.filter(g => g.n >= 15 && g.k !== 'none');
+  if (ratio.length >= 2) {
+    const lo = ratio.reduce((a, b) => (a.rate < b.rate ? a : b)), hi = ratio.reduce((a, b) => (a.rate > b.rate ? a : b));
+    find.push(`มัดจำที่เป็น<b>สัดส่วนน้อยของราคา</b> (${esc(hi.label)}) ลูกค้าไม่มา ${pct(hi.rate, 1)} ส่วนมัดจำ ${esc(lo.label)} ไม่มาแค่ ${pct(lo.rate, 1)}
+      มัดจำ ${baht(C.shop.deposit)} เท่ากันทุกบริการจึงคุมงานราคาสูงไม่อยู่`);
+  }
+  const seg = k => N.bySeg.find(g => g.k === k) || {};
+  if (seg('risky').n && seg('returning').n) find.push(`ลูกค้าที่<b>เคยไม่มาตามนัด</b>ไม่มาอีก ${pct(seg('risky').rate, 1)}
+    เทียบกับลูกค้าเก่าที่มาตามนัด ${pct(seg('returning').rate, 1)} ประวัติจึงทำนายพฤติกรรมได้ดี`);
+  const phone = N.byChannel.find(g => g.k === 'โทรจอง'), line = N.byChannel.find(g => g.k === 'LINE');
+  if (phone && phone.n >= 15 && line && line.n) find.push(`<b>โทรจอง (ไม่มีมัดจำ)</b> ไม่มา ${pct(phone.rate, 1)} สูงกว่าจองผ่าน LINE (${pct(line.rate, 1)}) ราว ${num(phone.rate / line.rate, 1)} เท่า`);
+
+  if (!ana.applied) act.push('กด <b>นำเวลาและมัดจำแบบใหม่ไปใช้กับระบบจอง</b> ด้านบน');
+  else act.push('ระบบจองใช้เวลาและมัดจำแบบใหม่อยู่แล้ว · กด “อัปเดตโมเดล” ทุกเดือนเพื่อให้ตามข้อมูลล่าสุด');
+  act.push(`ตั้งมัดจำตามราคา: ลูกค้าใหม่ ${pct(R.new)} · ลูกค้าเก่า ${pct(R.returning)} · เคยไม่มา ${pct(R.risky)}
+    → มัดจำเฉลี่ยใกล้เดิม (${baht(B.new.avgDep)}) แต่ ${pct(B.cheaperPct)} ของลูกค้าจ่ายน้อยลง และคาดว่ามูลค่าที่เสียจาก no-show ลดลงราว <b>${baht(B.old.lost - B.new.lost)}/เดือน</b>`);
+  if (phone && line && phone.rate > line.rate * 1.5) act.push('ลูกค้าโทรจอง ให้ส่งลิงก์ LINE ไปจ่ายมัดจำ แทนการรับจองโดยไม่มีมัดจำ');
+  const slow = D.stylists.filter(s => s.n && s.speed > 1.05).sort((a, b) => b.speed - a.speed)[0];
+  if (slow) act.push(`<b>${esc(slow.name)}</b> ใช้เวลามากกว่าค่ากลางของร้าน ${num((slow.speed - 1) * 100)}% (ลูกค้ารอเฉลี่ย ${num(slow.wait, 1)} นาที)
+    → จับคู่กับช่างที่เร็วกว่าเพื่อฝึก หรือเว้นช่วงพักระหว่างคิวให้`);
+  const thin = D.table.filter(r => r.basis !== 'data').map(r => r.th).filter((x, i, a) => a.indexOf(x) === i);
+  if (thin.length) act.push(`${thin.map(esc).join(', ')} ยังมีข้อมูลน้อย ให้ช่างกด “เริ่มบริการ/เสร็จสิ้น” ทุกนัด เพื่อให้เวลาแม่นขึ้น`);
+  act.push('ผลของมัดจำแบบใหม่เป็นประมาณการ เปิดใช้ 1–2 เดือนแล้วกลับมาเทียบ no-show จริงในหน้านี้');
+
+  return `<div class="card"><h2>สรุปผล · ข้อมูลบอกอะไร</h2><div class="grid2" style="margin:0">
+    <div><div class="h3">ข้อค้นพบ</div><ol class="ins">${find.map(x => `<li>${x}</li>`).join('')}</ol></div>
+    <div><div class="h3">สิ่งที่ร้านควรทำ</div><ol class="ins">${act.map(x => `<li>${x}</li>`).join('')}</ol></div></div></div>`;
+}
+
 function renderAnaSrc() {
   const m = ana.meta, ap = ana.applied;
   $('anaSrc').innerHTML = `<div class="src">
@@ -799,6 +844,7 @@ function renderAna() {
       ['CSAT ON-TIME / LATE', `${num(D.csat.onTime, 1)} / ${num(D.csat.late, 1)}`, 'คะแนนเมื่อเสร็จตามเวลา / เกินเวลา'],
       ['AVG DEPOSIT', `${baht(B.old.avgDep)} → ${baht(B.new.avgDep)}`, `${pct(B.cheaperPct)} ของลูกค้าจ่ายมัดจำน้อยลง`],
     ].map(([k, v, s]) => `<div class="kpi"><span>${k}</span><b style="font-size:24px">${v}</b><small>${s}</small></div>`).join('')}</div>
+    ${insights()}
 
     <div class="sect">1 · เวลาทำผมแบบ dynamic</div>
     <p class="note">ระบบไม่ใช้ 30 / 45 / 60 นาทีแบบเดิมแล้ว แต่ดูว่าบริการนี้กับผมความยาวนี้<b>ใช้เวลาทำจริงเท่าไหร่</b> (จากเวลาที่ช่างกด “เริ่มบริการ” ถึง “เสร็จสิ้น”)
