@@ -158,6 +158,8 @@
   .ptable th, .ptable td { padding: 10px 6px; border-bottom: 1px solid var(--line); text-align: right; }
   .ptable th:first-child, .ptable td:first-child { text-align: left; }
   .ptable th { font: 500 11px var(--mono); color: var(--muted); letter-spacing: 1px; }
+  .psvc { display: flex; align-items: center; gap: 10px; }
+  .psvc img { width: 40px; height: 40px; flex: none; display: block; }
   .ptable td small { display: block; font: 500 10px var(--mono); color: var(--muted); }
   .look { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .look .pic { aspect-ratio: 3 / 4; display: grid; place-items: end start; padding: 10px; border: 1px solid var(--line); background: center / cover no-repeat; }
@@ -731,7 +733,7 @@ function renderPrice() {
   $('view').innerHTML = `<span class="label">PRICE LIST</span><h1>ราคาบริการ</h1>
     <p class="lead">ราคาเริ่มต้นตามความยาวผม (S สั้น · M ประบ่า · L ยาว) ไม่แบ่งราคาตามเพศ</p>
     <table class="ptable"><tr><th>SERVICE</th>${cols.map(c => `<th>${c}</th>`).join('')}</tr>
-      ${C.services.map(s => `<tr><td>${esc(s.th)}<small>${esc(s.en)} · ${minRange(s)} MIN</small></td>${s.prices.S === s.prices.L
+      ${C.services.map(s => `<tr><td><div class="psvc"><img src="assets/services/${s.id}.svg" alt=""><span>${esc(s.th)}<small>${esc(s.en)} · ${minRange(s)} MIN</small></span></div></td>${s.prices.S === s.prices.L
         ? `<td colspan="3">${s.prices.S.toLocaleString('en-US')}${s.from ? '+' : ''}</td>`
         : cols.map(c => `<td>${s.prices[c].toLocaleString('en-US')}</td>`).join('')}</tr>`).join('')}</table>
     <p class="lead" style="margin-top:14px">ผมยาวพิเศษหรือหนามาก (XL) ช่างจะประเมินให้ก่อนเริ่มงาน · ราคาเป็นบาท</p>`;
