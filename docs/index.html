@@ -52,12 +52,13 @@
   .seg .len { width: 3px; background: currentColor; opacity: .55; align-self: center; }
   .seg.center button { justify-content: center; }
 
-  .svc { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center; padding: 14px 2px; border-bottom: 1px solid var(--line); width: 100%; text-align: left; }
+  .svc { display: grid; grid-template-columns: 22px 40px 1fr auto; gap: 12px; align-items: center; padding: 14px 2px; border-bottom: 1px solid var(--line); width: 100%; text-align: left; }
   .box { width: 20px; height: 20px; border: 1.5px solid var(--cross); display: grid; place-items: center; }
   .on > .box, .svc.on .box { background: var(--steel); border-color: var(--steel); }
   .box::after { content: ""; width: 9px; height: 5px; border: 2px solid #fff; border-top: 0; border-right: 0; transform: rotate(-45deg) translate(1px, -1px); opacity: 0; }
   .svc.on .box::after { opacity: 1; }
   .svc b { font-weight: 600; font-size: 16px; }
+  .svc .ico { width: 40px; height: 40px; display: block; }
   .svc small { display: block; font: 500 10.5px var(--mono); color: var(--muted); letter-spacing: 1px; margin-top: 2px; }
   .svc .price { font: 700 18px var(--en); }
 
@@ -303,7 +304,7 @@ function stepService() {
       <span class="len" style="height:${10 + i * 7}px"></span><span>${l.th}<small>${l.code}</small></span></button>`).join('')}</div>
     ${(C.lengths.find(l => l.code === draft.length) || {}).note ? `<p class="lead" style="margin:10px 0 0">${esc(C.lengths.find(l => l.code === draft.length).note)}</p>` : ''}
     <div style="margin-top:8px">${C.services.map(s => `<button class="svc ${draft.services.includes(s.id) ? 'on' : ''}" data-svc="${s.id}">
-      <span class="box"></span><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${minOf(s, draft.length)} MIN</small></span>
+      <span class="box"></span><img class="ico" src="assets/services/${s.id}.svg" alt=""><span><b>${esc(s.th)}</b><small>${esc(s.en)} · ${minOf(s, draft.length)} MIN</small></span>
       <span class="price">${priceTag(s, draft.length)}</span></button>`).join('')}</div>`;
   bindAiBox();
   $('view').querySelectorAll('[data-len]').forEach(b => b.onclick = () => { draft.length = b.dataset.len; stepService(); });
