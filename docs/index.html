@@ -160,7 +160,8 @@
   .ptable th { font: 500 11px var(--mono); color: var(--muted); letter-spacing: 1px; }
   .ptable td small { display: block; font: 500 10px var(--mono); color: var(--muted); }
   .look { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .look .pic { aspect-ratio: 3 / 4; display: grid; place-items: end start; padding: 10px; border: 1px solid var(--line); }
+  .look .pic { aspect-ratio: 3 / 4; display: grid; place-items: end start; padding: 10px; border: 1px solid var(--line); background: center / cover no-repeat; }
+  .look .pic > div { background: rgba(251, 251, 250, .94); padding: 5px 9px 6px; }
   .look b { font: 700 17px var(--en); } .look small { display: block; font-size: 11px; color: var(--muted); }
   .kv { border: 1px solid var(--line); background: var(--card); }
   .kv div { padding: 12px 14px; border-top: 1px solid var(--line); font-size: 14px; line-height: 1.55; }
@@ -744,10 +745,10 @@ function renderStylists() {
   foot('', ctaLabel('จองคิว', 'BOOK NOW'), () => go('book', 1));
 }
 function renderLookbook() {
-  const looks = [['Korean Two-block', 'Max'], ['Soft Wolf Cut', 'Tee'], ['Balayage Ash', 'Ploy'], ['Body Perm', 'Ken'],
-    ['Glass Hair', 'Nina'], ['French Bob', 'Max']];
-  $('view').innerHTML = `<span class="label">LOOKBOOK</span><h1>ผลงาน</h1><p class="lead">ตัวอย่างทรงยอดนิยมของร้าน (ภาพตัวอย่างสำหรับต้นแบบ)</p>
-    <div class="look">${looks.map(([n, s]) => `<div class="pic hatch frame"><div><b>${n}</b><small>by ${s}</small></div></div>`).join('')}</div>`;
+  const looks = [['Korean Two-block', 'Max', 'two-block'], ['Soft Wolf Cut', 'Tee', 'wolf-cut'], ['Balayage Ash', 'Ploy', 'balayage-ash'],
+    ['Body Perm', 'Ken', 'body-perm'], ['Glass Hair', 'Nina', 'glass-hair'], ['French Bob', 'Max', 'french-bob']];
+  $('view').innerHTML = `<span class="label">LOOKBOOK</span><h1>ผลงาน</h1><p class="lead">ตัวอย่างทรงยอดนิยมของร้าน (ภาพประกอบสำหรับต้นแบบ)</p>
+    <div class="look">${looks.map(([n, s, f]) => `<div class="pic frame" style="background-image:url(assets/looks/${f}.svg)" role="img" aria-label="ภาพประกอบทรง ${n}"><div><b>${n}</b><small>by ${s}</small></div></div>`).join('')}</div>`;
   foot('', ctaLabel('จองทรงนี้', 'BOOK NOW'), () => go('book', 1));
 }
 function renderAbout() {

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" role="img">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".35" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+<rect width="300" height="400" fill="#E3E8EC"/>
+<circle cx="150" cy="180" r="118" fill="#fff" opacity=".35"/>
+<path d="M90 172 C82 112 114 80 150 80 C186 80 218 112 210 172 L216 372 L84 372 Z" fill="#141419"/>
+<path d="M40 400 C46 342 90 314 128 306 L172 306 C210 314 254 342 260 400 Z" fill="#D9CBB8"/>
+<rect x="131" y="222" width="38" height="92" rx="16" fill="#E9C3A0"/>
+<path d="M131 262 C142 274 158 274 169 262 L169 250 L131 250 Z" fill="#000" opacity=".08"/>
+<ellipse cx="95" cy="186" rx="10" ry="15" fill="#E9C3A0"/><ellipse cx="205" cy="186" rx="10" ry="15" fill="#E9C3A0"/>
+<ellipse cx="150" cy="176" rx="56" ry="68" fill="#E9C3A0"/>
+<path d="M120 184 Q130 190 140 184 M160 184 Q170 190 180 184" stroke="#1E2B3C" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M119 168 Q129 163 139 167 M161 167 Q171 163 181 168" stroke="#141419" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+<ellipse cx="117" cy="204" rx="8" ry="5" fill="#E58A7A" opacity=".25"/><ellipse cx="183" cy="204" rx="8" ry="5" fill="#E58A7A" opacity=".25"/>
+<path d="M141 217 Q150 223 159 217" stroke="#8A4B3C" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+<path d="M96 178 L90 372 L118 372 L114 196 Z" fill="#141419" /><path d="M 204 178 L 210 372 L 182 372 L 186 196 Z" fill="#141419" /><path d="M100 220 L97 340" fill="none" stroke="url(#s)" stroke-width="5" stroke-linecap="round"/><path d="M 200 220 L 203 340" fill="none" stroke="url(#s)" stroke-width="5" stroke-linecap="round"/>
+<path d="M94 180 C90 114 120 88 150 90 C180 88 210 114 206 180 C198 140 178 112 150 104 C122 112 102 140 94 180 Z" fill="#141419"/><path d="M150 92 L150 106" stroke="#3A3A44" stroke-width="2"/><path d="M114 104 C126 94 140 92 146 94 M154 94 C164 92 178 96 188 106" stroke="url(#s)" stroke-width="7" fill="none" stroke-linecap="round"/>
+</svg>
